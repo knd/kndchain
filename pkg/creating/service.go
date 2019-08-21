@@ -1,6 +1,61 @@
 package creating
 
+import (
+	"errors"
+	"time"
+)
+
+const (
+	defaultGenesisLastHash = "0x000"
+	defaultGenesisHash     = "0x000"
+)
+
+// ErrMissingLastBlockHash is used when new block is not provided last block hash
+var ErrMissingLastBlockHash = errors.New("Missing last block hash")
+
+// Service provides block creating operations
 type Service interface {
-	CreateGenesisBlock()
-	CreateBlock(lastHash *string, data []string)
+	CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error)
+	CreateBlock(lastHash *string, data []string) (*Block, error)
+}
+
+type service struct{}
+
+// NewService creates a creating service with necessary dependencies
+func NewService() Service {
+	return &service{}
+}
+
+// CreateGenesisBlock returns the genesis block created from config
+func (s *service) CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error) {
+	// validations
+	lastBlockHash := *genesisConfig.LastHash
+	if genesisConfig.LastHash == nil {
+		lastBlockHash = defaultGenesisLastHash
+	}
+	blockHash := *genesisConfig.Hash
+	if genesisConfig.Hash == nil {
+		blockHash = defaultGenesisHash
+	}
+
+	return createBlock(time.Now(), &lastBlockHash, &blockHash, *genesisConfig.Data), nil
+}
+
+// CreateBlock returns the new block with given lastHash, data
+func (s *service) CreateBlock(lastHash *string, data []string) (*Block, error) {
+	// validations
+	if lastHash == nil {
+		return nil, ErrMissingLastBlockHash
+	}
+
+	return createBlock(time.Now(), lastHash, nil, data), nil
+}
+
+func createBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
+	return &Block{
+		Timestamp: timestamp,
+		LastHash:  lastHash,
+		Hash:      hash,
+		Data:      data,
+	}
 }
