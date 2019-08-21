@@ -17,9 +17,12 @@ func TestService_CreateDefautlGenesisBlock(t *testing.T) {
 	}
 
 	// perform test
-	genesisBlock, _ := addingService.CreateGenesisBlock(genesisConfig)
+	genesisBlock, err := addingService.CreateGenesisBlock(genesisConfig)
 
 	// test verification
-	lastHash := *genesisBlock.LastHash
-	assert.Equal(t, lastHash, DefaultGenesisLastHash)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, genesisBlock.Timestamp)
+	assert.Equal(t, *genesisBlock.LastHash, DefaultGenesisLastHash)
+	assert.Equal(t, *genesisBlock.Hash, DefaultGenesisHash)
+	assert.Empty(t, genesisBlock.Data)
 }
