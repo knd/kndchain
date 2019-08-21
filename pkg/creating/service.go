@@ -61,7 +61,8 @@ func (s *service) CreateBlock(lastHash *string, data []string) (*Block, error) {
 		return nil, ErrMissingLastBlockHash
 	}
 
-	return createBlock(time.Now(), lastHash, nil, data), nil
+	randomHash := "randomHash" // TODO: Implement hash
+	return createBlock(time.Now(), lastHash, &randomHash, data), nil
 }
 
 func createBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
