@@ -1,4 +1,4 @@
-package creating
+package mining
 
 import (
 	"time"

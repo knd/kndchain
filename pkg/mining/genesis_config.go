@@ -1,4 +1,4 @@
-package creating
+package mining
 
 type GenesisConfig struct {
 	LastHash *string   `json:"lastHash"`

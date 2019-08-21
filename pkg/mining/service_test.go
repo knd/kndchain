@@ -1,13 +1,14 @@
-package creating
+package mining
 
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestService_CreateDefautlGenesisBlock(t *testing.T) {
+func TestService_CreateDefaultGenesisBlock(t *testing.T) {
 	creatingService := NewService()
 	jsonData := "{}"
 
@@ -47,18 +48,25 @@ func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
 	assert.Equal(t, []string{"tx1", "tx2"}, genesisBlock.Data)
 }
 
-func TestService_CreateBlockWithGivenInput(t *testing.T) {
+func TestService_MineNewBlock(t *testing.T) {
 	creatingService := NewService()
-	lastBlockHash := "0x789"
-	data := []string{"tx1", "tx2"}
+	lastHash := "0x123"
+	hash := "0x456"
+	lastBlock := Block{
+		Timestamp: time.Now(),
+		LastHash:  &lastHash,
+		Hash:      &hash,
+		Data:      []string{"tx1"},
+	}
+	data := []string{"tx2"}
 
 	// perform test
-	block, err := creatingService.CreateBlock(&lastBlockHash, data)
+	newBlock, err := creatingService.MineNewBlock(&lastBlock, data)
 
 	// test verification
 	assert.Nil(t, err)
-	assert.NotEmpty(t, block.Timestamp)
-	assert.Equal(t, lastBlockHash, *block.LastHash)
-	assert.NotEmpty(t, *block.Hash)
-	assert.Equal(t, data, block.Data)
+	assert.NotEmpty(t, newBlock.Timestamp)
+	assert.Equal(t, "0x456", *newBlock.LastHash)
+	assert.NotEmpty(t, *newBlock.Hash)
+	assert.Equal(t, data, newBlock.Data)
 }

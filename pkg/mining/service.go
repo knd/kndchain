@@ -1,4 +1,4 @@
-package creating
+package mining
 
 import (
 	"errors"
@@ -14,12 +14,12 @@ const (
 )
 
 // ErrMissingLastBlockHash is used when new block is not provided last block hash
-var ErrMissingLastBlockHash = errors.New("Missing last block hash")
+var ErrMissingLastBlock = errors.New("Missing last block")
 
 // Service provides block creating operations
 type Service interface {
 	CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error)
-	CreateBlock(lastHash *string, data []string) (*Block, error)
+	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
 }
 
 type service struct{}
@@ -51,21 +51,21 @@ func (s *service) CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error
 		data = *genesisConfig.Data
 	}
 
-	return createBlock(time.Now(), &lastBlockHash, &blockHash, data), nil
+	return mineBlock(time.Now(), &lastBlockHash, &blockHash, data), nil
 }
 
-// CreateBlock returns the new block with given lastHash, data
-func (s *service) CreateBlock(lastHash *string, data []string) (*Block, error) {
+// MineNewBlock returns a new block
+func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) {
 	// validations
-	if lastHash == nil {
-		return nil, ErrMissingLastBlockHash
+	if lastBlock == nil {
+		return nil, ErrMissingLastBlock
 	}
 
 	randomHash := "randomHash" // TODO: Implement hash
-	return createBlock(time.Now(), lastHash, &randomHash, data), nil
+	return mineBlock(time.Now(), lastBlock.Hash, &randomHash, data), nil
 }
 
-func createBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
+func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
 	return &Block{
 		Timestamp: timestamp,
 		LastHash:  lastHash,
