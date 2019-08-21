@@ -6,8 +6,11 @@ import (
 )
 
 const (
-	defaultGenesisLastHash = "0x000"
-	defaultGenesisHash     = "0x000"
+	// DefaultGenesisLastHash is default last genesis block hash if not given from genesis config
+	DefaultGenesisLastHash = "0x000"
+
+	// DefaultGenesisHash is default genesis hash if not given from genesis config
+	DefaultGenesisHash = "0x000"
 )
 
 // ErrMissingLastBlockHash is used when new block is not provided last block hash
@@ -31,11 +34,11 @@ func (s *service) CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error
 	// validations
 	lastBlockHash := *genesisConfig.LastHash
 	if genesisConfig.LastHash == nil {
-		lastBlockHash = defaultGenesisLastHash
+		lastBlockHash = DefaultGenesisLastHash
 	}
 	blockHash := *genesisConfig.Hash
 	if genesisConfig.Hash == nil {
-		blockHash = defaultGenesisHash
+		blockHash = DefaultGenesisHash
 	}
 
 	return createBlock(time.Now(), &lastBlockHash, &blockHash, *genesisConfig.Data), nil
