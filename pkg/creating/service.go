@@ -32,16 +32,26 @@ func NewService() Service {
 // CreateGenesisBlock returns the genesis block created from config
 func (s *service) CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error) {
 	// validations
-	lastBlockHash := *genesisConfig.LastHash
+	var lastBlockHash string
 	if genesisConfig.LastHash == nil {
 		lastBlockHash = DefaultGenesisLastHash
-	}
-	blockHash := *genesisConfig.Hash
-	if genesisConfig.Hash == nil {
-		blockHash = DefaultGenesisHash
+	} else {
+		lastBlockHash = *genesisConfig.LastHash
 	}
 
-	return createBlock(time.Now(), &lastBlockHash, &blockHash, *genesisConfig.Data), nil
+	var blockHash string
+	if genesisConfig.Hash == nil {
+		blockHash = DefaultGenesisHash
+	} else {
+		blockHash = *genesisConfig.Hash
+	}
+
+	var data []string
+	if genesisConfig.Data != nil {
+		data = *genesisConfig.Data
+	}
+
+	return createBlock(time.Now(), &lastBlockHash, &blockHash, data), nil
 }
 
 // CreateBlock returns the new block with given lastHash, data
