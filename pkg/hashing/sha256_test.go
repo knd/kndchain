@@ -1,7 +1,8 @@
-package hasing
+package hashing
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -11,5 +12,6 @@ func TestHashing_HashSingleInput(t *testing.T) {
 }
 
 func TestHashing_HashYieldsDeterministicResultRegardlessInputsOrder(t *testing.T) {
-	assert.Equal(t, SHA256Hash("hello", "world", "2019"), SHA256Hash("2019", "hello", "world"))
+	now := time.Now()
+	assert.Equal(t, SHA256Hash("hello", now, 2019), SHA256Hash(2019, "hello", now))
 }

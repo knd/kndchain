@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,6 +68,6 @@ func TestService_MineNewBlock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, newBlock.Timestamp)
 	assert.Equal(t, "0x456", *newBlock.LastHash)
-	assert.NotEmpty(t, *newBlock.Hash)
+	assert.Equal(t, *newBlock.Hash, hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash))
 	assert.Equal(t, data, newBlock.Data)
 }

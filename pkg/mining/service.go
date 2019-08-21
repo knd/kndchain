@@ -3,6 +3,8 @@ package mining
 import (
 	"errors"
 	"time"
+
+	"github.com/knd/kndchain/pkg/hashing"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 	DefaultGenesisHash = "0x000"
 )
 
-// ErrMissingLastBlockHash is used when new block is not provided last block hash
+// ErrMissingLastBlock is used when new block is not provided last block hash
 var ErrMissingLastBlock = errors.New("Missing last block")
 
 // Service provides block creating operations
@@ -61,8 +63,10 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 		return nil, ErrMissingLastBlock
 	}
 
-	randomHash := "randomHash" // TODO: Implement hash
-	return mineBlock(time.Now(), lastBlock.Hash, &randomHash, data), nil
+	timestamp := time.Now()
+	hash := hashing.SHA256Hash(timestamp, *lastBlock.Hash, data)
+
+	return mineBlock(timestamp, lastBlock.Hash, &hash, data), nil
 }
 
 func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
