@@ -38,14 +38,14 @@ type service struct {
 }
 
 // NewService creates a creating service with necessary dependencies
-func NewService(r Repository, l listing.Service) Service {
+func NewService(r Repository, l listing.Service, c *GenesisConfig) Service {
 	newS := &service{r, l}
 
 	// Do not have genesis block
 	if l.GetBlockCount() == 0 {
 		var genesisBlock *Block
 		var err error
-		if genesisBlock, err = CreateGenesisBlock(GenesisConfig{}); err != nil {
+		if genesisBlock, err = CreateGenesisBlock(c); err != nil {
 			log.Fatal("Cannot create genesis block")
 		}
 		if err = newS.AddBlock(genesisBlock); err != nil {
@@ -57,24 +57,24 @@ func NewService(r Repository, l listing.Service) Service {
 }
 
 // CreateGenesisBlock returns the genesis block created from config
-func CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error) {
+func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 	// validations
 	var lastBlockHash string
-	if genesisConfig.LastHash == nil {
+	if genesisConfig == nil || genesisConfig.LastHash == nil {
 		lastBlockHash = DefaultGenesisLastHash
 	} else {
 		lastBlockHash = *genesisConfig.LastHash
 	}
 
 	var blockHash string
-	if genesisConfig.Hash == nil {
+	if genesisConfig == nil || genesisConfig.Hash == nil {
 		blockHash = DefaultGenesisHash
 	} else {
 		blockHash = *genesisConfig.Hash
 	}
 
 	var data []string
-	if genesisConfig.Data != nil {
+	if genesisConfig != nil && genesisConfig.Data != nil {
 		data = *genesisConfig.Data
 	}
 
