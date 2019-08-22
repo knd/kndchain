@@ -10,7 +10,7 @@ import (
 )
 
 func TestService_CreateDefaultGenesisBlock(t *testing.T) {
-	creatingService := NewService()
+	creatingService := NewService(new(MockedRepository))
 	jsonData := "{}"
 
 	var genesisConfig GenesisConfig
@@ -30,7 +30,7 @@ func TestService_CreateDefaultGenesisBlock(t *testing.T) {
 }
 
 func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
-	creatingService := NewService()
+	creatingService := NewService(new(MockedRepository))
 	jsonData := `{ "lastHash": "0x123", "hash": "0x456", "data": ["tx1", "tx2"] }`
 
 	var genesisConfig GenesisConfig
@@ -50,7 +50,7 @@ func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
 }
 
 func TestService_MineNewBlock(t *testing.T) {
-	creatingService := NewService()
+	creatingService := NewService(new(MockedRepository))
 	lastHash := "0x123"
 	hash := "0x456"
 	lastBlock := Block{
@@ -70,4 +70,24 @@ func TestService_MineNewBlock(t *testing.T) {
 	assert.Equal(t, "0x456", *newBlock.LastHash)
 	assert.Equal(t, *newBlock.Hash, hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash))
 	assert.Equal(t, data, newBlock.Data)
+}
+
+func TestService_AddBlockToBlockchain(t *testing.T) {
+	mockedRepository := new(MockedRepository)
+	creatingService := NewService(mockedRepository)
+	LastHash := "0x123"
+	Hash := "0x456"
+	minedBlock := &Block{
+		Timestamp: time.Now(),
+		LastHash:  &LastHash,
+		Hash:      &Hash,
+		Data:      []string{"tx1"},
+	}
+	mockedRepository.On("AddBlock", minedBlock).Return(nil)
+
+	// perform test
+	creatingService.AddBlock(minedBlock)
+
+	// test verification
+	mockedRepository.AssertExpectations(t)
 }

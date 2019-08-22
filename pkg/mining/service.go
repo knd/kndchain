@@ -22,13 +22,22 @@ var ErrMissingLastBlock = errors.New("Missing last block")
 type Service interface {
 	CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error)
 	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
+	AddBlock(minedBlock *Block) error
 }
 
-type service struct{}
+// Repository provides access to in-memory blockchain
+type Repository interface {
+	// AddBlock adds a minedBlock into blockchain
+	AddBlock(minedBlock *Block) error
+}
+
+type service struct {
+	blockchain Repository
+}
 
 // NewService creates a creating service with necessary dependencies
-func NewService() Service {
-	return &service{}
+func NewService(r Repository) Service {
+	return &service{r}
 }
 
 // CreateGenesisBlock returns the genesis block created from config
@@ -67,6 +76,12 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 	hash := hashing.SHA256Hash(timestamp, *lastBlock.Hash, data)
 
 	return mineBlock(timestamp, lastBlock.Hash, &hash, data), nil
+}
+
+// AddBlock adds a minedBlock into blockchain
+func (s *service) AddBlock(minedBlock *Block) error {
+	// TODO: validations of minedBlock
+	return s.blockchain.AddBlock(minedBlock)
 }
 
 func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
