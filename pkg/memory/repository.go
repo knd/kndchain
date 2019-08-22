@@ -9,6 +9,13 @@ type MemStorage struct {
 	blockchain *Blockchain
 }
 
+// NewRepository creates a blockchain repository
+func NewRepository() *MemStorage {
+	return &MemStorage{
+		blockchain: &Blockchain{},
+	}
+}
+
 // AddBlock adds mined block into blockchain
 func (m *MemStorage) AddBlock(minedBlock *mining.Block) error {
 	// TODO: validations of minedBlock
