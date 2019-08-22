@@ -2,9 +2,11 @@ package mining
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/knd/kndchain/pkg/hashing"
+	"github.com/knd/kndchain/pkg/listing"
 )
 
 const (
@@ -20,7 +22,6 @@ var ErrMissingLastBlock = errors.New("Missing last block")
 
 // Service provides block creating operations
 type Service interface {
-	CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error)
 	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
 	AddBlock(minedBlock *Block) error
 }
@@ -33,15 +34,30 @@ type Repository interface {
 
 type service struct {
 	blockchain Repository
+	listing    listing.Service
 }
 
 // NewService creates a creating service with necessary dependencies
-func NewService(r Repository) Service {
-	return &service{r}
+func NewService(r Repository, l listing.Service) Service {
+	newS := &service{r, l}
+
+	// Do not have genesis block
+	if l.GetBlockCount() == 0 {
+		var genesisBlock *Block
+		var err error
+		if genesisBlock, err = CreateGenesisBlock(GenesisConfig{}); err != nil {
+			log.Fatal("Cannot create genesis block")
+		}
+		if err = newS.AddBlock(genesisBlock); err != nil {
+			log.Fatal("cannot add genesis block to blockchain")
+		}
+	}
+
+	return newS
 }
 
 // CreateGenesisBlock returns the genesis block created from config
-func (s *service) CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error) {
+func CreateGenesisBlock(genesisConfig GenesisConfig) (*Block, error) {
 	// validations
 	var lastBlockHash string
 	if genesisConfig.LastHash == nil {

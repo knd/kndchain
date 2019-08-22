@@ -7,10 +7,10 @@ import (
 
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestService_CreateDefaultGenesisBlock(t *testing.T) {
-	creatingService := NewService(new(MockedRepository))
+func Test_CreateDefaultGenesisBlock(t *testing.T) {
 	jsonData := "{}"
 
 	var genesisConfig GenesisConfig
@@ -19,7 +19,7 @@ func TestService_CreateDefaultGenesisBlock(t *testing.T) {
 	}
 
 	// perform test
-	genesisBlock, err := creatingService.CreateGenesisBlock(genesisConfig)
+	genesisBlock, err := CreateGenesisBlock(genesisConfig)
 
 	// test verification
 	assert.Nil(t, err)
@@ -29,8 +29,7 @@ func TestService_CreateDefaultGenesisBlock(t *testing.T) {
 	assert.Empty(t, genesisBlock.Data)
 }
 
-func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
-	creatingService := NewService(new(MockedRepository))
+func Test_CreateGenesisBlockWithGivenInput(t *testing.T) {
 	jsonData := `{ "lastHash": "0x123", "hash": "0x456", "data": ["tx1", "tx2"] }`
 
 	var genesisConfig GenesisConfig
@@ -39,7 +38,7 @@ func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
 	}
 
 	// perform test
-	genesisBlock, err := creatingService.CreateGenesisBlock(genesisConfig)
+	genesisBlock, err := CreateGenesisBlock(genesisConfig)
 
 	// test verification
 	assert.Nil(t, err)
@@ -50,7 +49,9 @@ func TestService_CreateGenesisBlockWithGivenInput(t *testing.T) {
 }
 
 func TestService_MineNewBlock(t *testing.T) {
-	creatingService := NewService(new(MockedRepository))
+	mockedListing := new(MockedListing)
+	mockedListing.On("GetBlockCount").Return(1)
+	creatingService := NewService(new(MockedRepository), mockedListing)
 	lastHash := "0x123"
 	hash := "0x456"
 	lastBlock := Block{
@@ -74,7 +75,9 @@ func TestService_MineNewBlock(t *testing.T) {
 
 func TestService_AddBlockToBlockchain(t *testing.T) {
 	mockedRepository := new(MockedRepository)
-	creatingService := NewService(mockedRepository)
+	mockedListing := new(MockedListing)
+	mockedListing.On("GetBlockCount").Return(1)
+	creatingService := NewService(mockedRepository, mockedListing)
 	LastHash := "0x123"
 	Hash := "0x456"
 	minedBlock := &Block{
@@ -90,4 +93,23 @@ func TestService_AddBlockToBlockchain(t *testing.T) {
 
 	// test verification
 	mockedRepository.AssertExpectations(t)
+}
+
+func TestService_AutoCreateGenesisBlock(t *testing.T) {
+	mockedRepository := new(MockedRepository)
+	mockedRepository.On("AddBlock", mock.MatchedBy(func(genesisBlock *Block) bool {
+		return *genesisBlock.LastHash == DefaultGenesisLastHash &&
+			*genesisBlock.Hash == DefaultGenesisHash &&
+			len(genesisBlock.Data) == 0
+	})).Return(nil)
+	mockedListing := new(MockedListing)
+	mockedListing.On("GetBlockCount").Return(0)
+
+	// perform test
+	NewService(mockedRepository, mockedListing)
+
+	// test verification
+	mockedRepository.AssertExpectations(t)
+	mockedListing.AssertExpectations(t)
+
 }
