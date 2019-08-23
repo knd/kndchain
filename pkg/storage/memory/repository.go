@@ -61,3 +61,24 @@ func (m *MemStorage) GetLastBlock() listing.Block {
 		Data:      lastBlock.Data,
 	}
 }
+
+// ReplaceChain replace the current blockchain with the newchain
+func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
+	if newChain == nil || len(newChain.Chain) <= 1 {
+		log.Fatal("Blockchain is nil/ zero block/ or contains no genesis block")
+	}
+
+	newBc := []Block{}
+	for _, newBlock := range newChain.Chain {
+		newBc = append(newBc, Block{
+			Timestamp: newBlock.Timestamp,
+			LastHash:  newBlock.LastHash,
+			Hash:      newBlock.Hash,
+			Data:      newBlock.Data,
+		})
+	}
+
+	m.blockchain.chain = newBc
+
+	return nil
+}
