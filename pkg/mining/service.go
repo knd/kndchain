@@ -7,6 +7,7 @@ import (
 
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/knd/kndchain/pkg/listing"
+	"github.com/knd/kndchain/pkg/validating"
 )
 
 const (
@@ -24,22 +25,25 @@ var ErrMissingLastBlock = errors.New("Missing last block")
 type Service interface {
 	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
 	AddBlock(minedBlock *Block) error
+	ReplaceChain(newChain *Blockchain) error
 }
 
 // Repository provides access to in-memory blockchain
 type Repository interface {
 	// AddBlock adds a minedBlock into blockchain
 	AddBlock(minedBlock *Block) error
+	ReplaceChain(newChain *Blockchain) error
 }
 
 type service struct {
 	blockchain Repository
 	listing    listing.Service
+	validating validating.Service
 }
 
 // NewService creates a creating service with necessary dependencies
-func NewService(r Repository, l listing.Service, c *GenesisConfig) Service {
-	newS := &service{r, l}
+func NewService(r Repository, l listing.Service, v validating.Service, c *GenesisConfig) Service {
+	newS := &service{r, l, v}
 
 	// Do not have genesis block
 	if l.GetBlockCount() == 0 {
@@ -107,4 +111,9 @@ func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []strin
 		Hash:      hash,
 		Data:      data,
 	}
+}
+
+func (s *service) ReplaceChain(newChain *Blockchain) error {
+	// TODO: Implement this method
+	return nil
 }

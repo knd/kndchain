@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockedListing is a mocked object that implememnts mining.Repository
+// MockedListing is a mocked object that implememnts listing.Service
 type MockedListing struct {
 	mock.Mock
 }

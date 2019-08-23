@@ -51,7 +51,7 @@ func Test_CreateGenesisBlockWithGivenInput(t *testing.T) {
 func TestService_MineNewBlock(t *testing.T) {
 	mockedListing := new(MockedListing)
 	mockedListing.On("GetBlockCount").Return(1)
-	creatingService := NewService(new(MockedRepository), mockedListing, nil)
+	creatingService := NewService(new(MockedRepository), mockedListing, new(MockedValidating), nil)
 	lastHash := "0x123"
 	hash := "0x456"
 	lastBlock := Block{
@@ -77,7 +77,7 @@ func TestService_AddBlockToBlockchain(t *testing.T) {
 	mockedRepository := new(MockedRepository)
 	mockedListing := new(MockedListing)
 	mockedListing.On("GetBlockCount").Return(1)
-	creatingService := NewService(mockedRepository, mockedListing, nil)
+	creatingService := NewService(mockedRepository, mockedListing, new(MockedValidating), nil)
 	LastHash := "0x123"
 	Hash := "0x456"
 	minedBlock := &Block{
@@ -106,7 +106,7 @@ func TestService_AutoCreateGenesisBlock(t *testing.T) {
 	mockedListing.On("GetBlockCount").Return(0)
 
 	// perform test
-	NewService(mockedRepository, mockedListing, nil)
+	NewService(mockedRepository, mockedListing, new(MockedValidating), nil)
 
 	// test verification
 	mockedRepository.AssertExpectations(t)
