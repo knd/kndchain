@@ -42,7 +42,7 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 			return false
 		}
 
-		if hashing.SHA256Hash(currBlock.Timestamp, *currBlock.LastHash, currBlock.Data) != *currBlock.Hash {
+		if hashing.SHA256Hash(currBlock.Timestamp, *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
 			return false
 		}
 

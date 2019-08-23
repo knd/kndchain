@@ -2,6 +2,7 @@ package mining
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/knd/kndchain/pkg/hashing"
@@ -15,6 +16,12 @@ const (
 
 	// DefaultGenesisHash is default genesis hash if not given from genesis config
 	DefaultGenesisHash = "0x000"
+
+	// DefaultGenesisDifficulty is default difficulty in genesis block
+	DefaultGenesisDifficulty uint32 = 3
+
+	// DefaultGenesisNonce is default nonce in genesis block
+	DefaultGenesisNonce uint32 = 0
 )
 
 // ErrMissingLastBlock is used when new block is not provided last block hash
@@ -82,12 +89,26 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 		blockHash = *genesisConfig.Hash
 	}
 
+	var blockDifficulty uint32
+	if genesisConfig == nil {
+		blockDifficulty = DefaultGenesisDifficulty
+	} else {
+		blockDifficulty = genesisConfig.Difficulty
+	}
+
+	var blockNonce uint32
+	if genesisConfig == nil {
+		blockNonce = DefaultGenesisNonce
+	} else {
+		blockNonce = genesisConfig.Nonce
+	}
+
 	var data []string
 	if genesisConfig != nil && genesisConfig.Data != nil {
 		data = *genesisConfig.Data
 	}
 
-	return mineBlock(time.Now(), &lastBlockHash, &blockHash, data), nil
+	return yieldBlock(time.Now(), &lastBlockHash, &blockHash, data, blockNonce, blockDifficulty), nil
 }
 
 // MineNewBlock returns a new block
@@ -97,10 +118,20 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 		return nil, ErrMissingLastBlock
 	}
 
-	timestamp := time.Now()
-	hash := hashing.SHA256Hash(timestamp, *lastBlock.Hash, data)
+	difficulty := lastBlock.Difficulty
+	var nonce uint32
+	var timestamp time.Time
+	var hash string
+	for {
+		nonce++
+		timestamp = time.Now()
+		hash = hashing.SHA256Hash(timestamp, *lastBlock.Hash, data, nonce, difficulty)
+		if hash[:difficulty] == strings.Repeat("0", int(difficulty)) {
+			break
+		}
+	}
 
-	return mineBlock(timestamp, lastBlock.Hash, &hash, data), nil
+	return yieldBlock(timestamp, lastBlock.Hash, &hash, data, nonce, difficulty), nil
 }
 
 // AddBlock adds a minedBlock into blockchain
@@ -109,12 +140,14 @@ func (s *service) AddBlock(minedBlock *Block) error {
 	return s.blockchain.AddBlock(minedBlock)
 }
 
-func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []string) *Block {
+func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []string, nonce uint32, difficulty uint32) *Block {
 	return &Block{
-		Timestamp: timestamp,
-		LastHash:  lastHash,
-		Hash:      hash,
-		Data:      data,
+		Timestamp:  timestamp,
+		LastHash:   lastHash,
+		Hash:       hash,
+		Data:       data,
+		Nonce:      nonce,
+		Difficulty: difficulty,
 	}
 }
 

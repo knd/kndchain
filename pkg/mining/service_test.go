@@ -71,11 +71,15 @@ func TestService(t *testing.T) {
 		mockedListing.On("GetBlockCount").Return(1)
 		lastHash := "0x123"
 		hash := "0x456"
+		var nonce uint32 = 1
+		var difficulty uint32 = 1
 		lastBlock := Block{
-			Timestamp: time.Now(),
-			LastHash:  &lastHash,
-			Hash:      &hash,
-			Data:      []string{"tx1"},
+			Timestamp:  time.Now(),
+			LastHash:   &lastHash,
+			Hash:       &hash,
+			Data:       []string{"tx1"},
+			Nonce:      nonce,
+			Difficulty: difficulty,
 		}
 		data := []string{"tx2"}
 
@@ -86,7 +90,8 @@ func TestService(t *testing.T) {
 		assert.Nil(err)
 		assert.NotEmpty(newBlock.Timestamp)
 		assert.Equal("0x456", *newBlock.LastHash)
-		assert.Equal(*newBlock.Hash, hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash))
+		assert.Equal("0", (*newBlock.Hash)[:difficulty])
+		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash, newBlock.Nonce, difficulty), *newBlock.Hash)
 		assert.Equal(data, newBlock.Data)
 	})
 
