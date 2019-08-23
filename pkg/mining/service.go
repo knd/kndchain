@@ -2,7 +2,6 @@ package mining
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/knd/kndchain/pkg/hashing"
@@ -46,16 +45,16 @@ func NewService(r Repository, l listing.Service, v validating.Service, c *Genesi
 	newS := &service{r, l, v}
 
 	// Do not have genesis block
-	if l.GetBlockCount() == 0 {
-		var genesisBlock *Block
-		var err error
-		if genesisBlock, err = CreateGenesisBlock(c); err != nil {
-			log.Fatal("Cannot create genesis block")
-		}
-		if err = newS.AddBlock(genesisBlock); err != nil {
-			log.Fatal("cannot add genesis block to blockchain")
-		}
-	}
+	// if l.GetBlockCount() == 0 {
+	// 	var genesisBlock *Block
+	// 	var err error
+	// 	if genesisBlock, err = CreateGenesisBlock(c); err != nil {
+	// 		log.Fatal("Cannot create genesis block")
+	// 	}
+	// 	if err = newS.AddBlock(genesisBlock); err != nil {
+	// 		log.Fatal("cannot add genesis block to blockchain")
+	// 	}
+	// }
 
 	return newS
 }
