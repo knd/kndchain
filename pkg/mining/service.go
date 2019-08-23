@@ -20,6 +20,12 @@ const (
 // ErrMissingLastBlock is used when new block is not provided last block hash
 var ErrMissingLastBlock = errors.New("Missing last block")
 
+// ErrInvalidChain is used when trying to replace an invalid chain
+var ErrInvalidChain = errors.New("Invalid chain is given to replace original chain")
+
+// ErrShorterChain is used when trying to replace a shorter chain
+var ErrShorterChain = errors.New("Shorter chain is given to replace original chain")
+
 // Service provides block creating operations
 type Service interface {
 	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
@@ -113,6 +119,31 @@ func mineBlock(timestamp time.Time, lastHash *string, hash *string, data []strin
 }
 
 func (s *service) ReplaceChain(newChain *Blockchain) error {
-	// TODO: Implement this method
-	return nil
+	// validations
+	if newChain == nil {
+		return ErrInvalidChain
+	}
+	if uint32(len(newChain.Chain)) <= s.listing.GetBlockCount() {
+		return ErrShorterChain
+	}
+	vChain := toValidatingChain(newChain)
+	if !s.validating.IsValidChain(vChain) {
+		return ErrInvalidChain
+	}
+
+	return s.blockchain.ReplaceChain(newChain)
+}
+
+func toValidatingChain(newChain *Blockchain) *validating.Blockchain {
+	vBlockchain := &validating.Blockchain{}
+	for _, block := range newChain.Chain {
+		vBlock := &validating.Block{
+			Timestamp: block.Timestamp,
+			LastHash:  block.LastHash,
+			Hash:      block.Hash,
+			Data:      block.Data,
+		}
+		vBlockchain.Chain = append(vBlockchain.Chain, *vBlock)
+	}
+	return vBlockchain
 }

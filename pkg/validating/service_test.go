@@ -13,7 +13,7 @@ func TestService_IsInvalidChainWhenGenesisBlockIsInvalid(t *testing.T) {
 	lastHash := "0x123"
 	hash := "0x456"
 	blockchain := &Blockchain{
-		chain: []Block{
+		Chain: []Block{
 			Block{
 				Timestamp: time.Now(),
 				LastHash:  &lastHash,
@@ -34,7 +34,7 @@ func TestService_IsInvalidChainWhenLastHashIsTampered(t *testing.T) {
 	hash := "0x456"
 	tamperedLashHash := "tampered"
 	blockchain := &Blockchain{
-		chain: []Block{
+		Chain: []Block{
 			Block{
 				Timestamp: genesisTimestamp,
 				LastHash:  &lastHash,
@@ -86,7 +86,7 @@ func TestService_IsInvalidChainWhenTimestampIsNotInOrder(t *testing.T) {
 	blockBHash := hashing.SHA256Hash(timestamp1, blockAHash, []string{"txB"})
 	blockB.Hash = &blockBHash
 
-	blockchain := &Blockchain{chain: []Block{genesisBlock, blockA, blockB}}
+	blockchain := &Blockchain{Chain: []Block{genesisBlock, blockA, blockB}}
 
 	// perform test & verification
 	assert.False(t, validatingService.IsValidChain(blockchain))
@@ -124,7 +124,7 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 	blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data)
 	blockB.Hash = &blockBHash
 
-	blockchain := &Blockchain{chain: []Block{genesisBlock, blockA, blockB}}
+	blockchain := &Blockchain{Chain: []Block{genesisBlock, blockA, blockB}}
 
 	// perform test & verification
 	assert.True(t, validatingService.IsValidChain(blockchain))

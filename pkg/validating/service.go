@@ -18,19 +18,20 @@ func NewService() Service {
 
 // IsValidChain returns true if list of blocks compose valid blockchain
 func (s *service) IsValidChain(bc *Blockchain) bool {
-	if bc == nil || len(bc.chain) == 0 {
+	if bc == nil || len(bc.Chain) == 0 {
 		return false
 	}
-	if len(bc.chain) == 1 {
-		return len(bc.chain[0].Data) == 0
+	if len(bc.Chain) == 1 {
+		// the only constrant for valid genesis block is that data is empty
+		return len(bc.Chain[0].Data) == 0
 	}
 
-	genesisBlock := bc.chain[0]
+	genesisBlock := bc.Chain[0]
 	prevTimestamp := genesisBlock.Timestamp
 	prevHash := genesisBlock.Hash
 
-	for i := 1; i < len(bc.chain); i++ {
-		currBlock := bc.chain[i]
+	for i := 1; i < len(bc.Chain); i++ {
+		currBlock := bc.Chain[i]
 
 		if prevTimestamp.Equal(currBlock.Timestamp) ||
 			prevTimestamp.After(currBlock.Timestamp) {
