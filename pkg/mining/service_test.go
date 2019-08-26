@@ -106,6 +106,11 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	})
 }
 
+func TestHexStringToBinary(t *testing.T) {
+	// https://www.binaryhexconverter.com/hex-to-binary-converter
+	assert.Equal(t, "0000000100100011010001011000100100010000101010111100110111101111", HexStringToBinary("0123458910abcdef"))
+}
+
 func TestService(t *testing.T) {
 	assert := assert.New(t)
 	var miningService Service

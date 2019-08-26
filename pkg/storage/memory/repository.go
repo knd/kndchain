@@ -30,10 +30,12 @@ func (m *MemStorage) AddBlock(minedBlock *mining.Block) error {
 	}
 
 	newB := Block{
-		Timestamp: minedBlock.Timestamp,
-		LastHash:  minedBlock.LastHash,
-		Hash:      minedBlock.Hash,
-		Data:      minedBlock.Data,
+		Timestamp:  minedBlock.Timestamp,
+		LastHash:   minedBlock.LastHash,
+		Hash:       minedBlock.Hash,
+		Data:       minedBlock.Data,
+		Nonce:      minedBlock.Nonce,
+		Difficulty: minedBlock.Difficulty,
 	}
 
 	m.blockchain.chain = append(m.blockchain.chain, newB)
@@ -55,10 +57,12 @@ func (m *MemStorage) GetLastBlock() listing.Block {
 	lastBlock := m.blockchain.chain[m.GetBlockCount()-1]
 
 	return listing.Block{
-		Timestamp: lastBlock.Timestamp,
-		LastHash:  lastBlock.LastHash,
-		Hash:      lastBlock.Hash,
-		Data:      lastBlock.Data,
+		Timestamp:  lastBlock.Timestamp,
+		LastHash:   lastBlock.LastHash,
+		Hash:       lastBlock.Hash,
+		Data:       lastBlock.Data,
+		Nonce:      lastBlock.Nonce,
+		Difficulty: lastBlock.Difficulty,
 	}
 }
 
@@ -71,10 +75,12 @@ func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
 	newBc := []Block{}
 	for _, newBlock := range newChain.Chain {
 		newBc = append(newBc, Block{
-			Timestamp: newBlock.Timestamp,
-			LastHash:  newBlock.LastHash,
-			Hash:      newBlock.Hash,
-			Data:      newBlock.Data,
+			Timestamp:  newBlock.Timestamp,
+			LastHash:   newBlock.LastHash,
+			Hash:       newBlock.Hash,
+			Data:       newBlock.Data,
+			Nonce:      newBlock.Nonce,
+			Difficulty: newBlock.Difficulty,
 		})
 	}
 

@@ -1,7 +1,10 @@
 package mining
 
 import (
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -146,12 +149,23 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 		timestamp = time.Now()
 		difficulty = AdjustBlockDifficulty(*lastBlock, timestamp)
 		hash = hashing.SHA256Hash(timestamp, *lastBlock.Hash, data, nonce, difficulty)
-		if hash[:difficulty] == strings.Repeat("0", int(difficulty)) {
+		if HexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break
 		}
 	}
 
 	return yieldBlock(timestamp, lastBlock.Hash, &hash, data, nonce, difficulty), nil
+}
+
+// HexStringToBinary converts the hex string to binary string representation
+func HexStringToBinary(s string) string {
+	res := ""
+	b, _ := hex.DecodeString(s)
+	for _, c := range b {
+		binary, _ := strconv.Atoi(fmt.Sprintf("%.b", c))
+		res = fmt.Sprintf("%s%s", res, fmt.Sprintf("%08d", binary))
+	}
+	return res
 }
 
 // AddBlock adds a minedBlock into blockchain
