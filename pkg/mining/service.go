@@ -11,6 +11,11 @@ import (
 )
 
 const (
+	// MineRate (1000 milliseconds) adjusts the difficulty of mining operation
+	MineRate int = 1000
+)
+
+const (
 	// DefaultGenesisLastHash is default last genesis block hash if not given from genesis config
 	DefaultGenesisLastHash = "0x000"
 
@@ -109,6 +114,17 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 	}
 
 	return yieldBlock(time.Now(), &lastBlockHash, &blockHash, data, blockNonce, blockDifficulty), nil
+}
+
+// AdjustBlockDifficulty adjusts the difficulty in the current mining block
+func AdjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
+	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(MineRate) * time.Millisecond) {
+		return lastBlock.Difficulty + 1
+	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(MineRate) * time.Millisecond) {
+		return lastBlock.Difficulty - 1
+	}
+
+	return lastBlock.Difficulty
 }
 
 // MineNewBlock returns a new block

@@ -52,6 +52,49 @@ func TestCreateGenesisBlock(t *testing.T) {
 	})
 }
 
+func TestAdjustBlockDifficulty(t *testing.T) {
+	assert := assert.New(t)
+	lastHash, hash := "0x123", "0x456"
+	lastBlock := &Block{
+		Timestamp:  time.Now(),
+		LastHash:   &lastHash,
+		Hash:       &hash,
+		Data:       []string{"tx1"},
+		Nonce:      1,
+		Difficulty: 2,
+	}
+
+	t.Run("raises block difficulty if mining rate is faster than MINE_RATE milliseconds", func(t *testing.T) {
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 999)
+
+		// perform test
+		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+
+		// test verification
+		assert.Equal(uint32(3), difficulty)
+	})
+
+	t.Run("lowers block difficulty if mining rate is slower than threshold MINE_RATE milliseconds", func(t *testing.T) {
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
+
+		// perform test
+		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+
+		// test verficiation
+		assert.Equal(uint32(1), difficulty)
+	})
+
+	t.Run("lowers block difficulty if mining rate is equal to threshold MINE_RATE milliseconds", func(t *testing.T) {
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1000)
+
+		// perform test
+		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+
+		// test verficiation
+		assert.Equal(uint32(2), difficulty)
+	})
+}
+
 func TestService(t *testing.T) {
 	assert := assert.New(t)
 	var miningService Service
