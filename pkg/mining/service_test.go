@@ -149,8 +149,8 @@ func TestService(t *testing.T) {
 		assert.Nil(err)
 		assert.NotEmpty(newBlock.Timestamp)
 		assert.Equal("0x456", *newBlock.LastHash)
-		assert.Equal("0", (*newBlock.Hash)[:difficulty])
-		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash, newBlock.Nonce, 2), *newBlock.Hash)
+		assert.Equal("00", HexStringToBinary(*newBlock.Hash)[:newBlock.Difficulty])
+		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
 		assert.Equal(data, newBlock.Data)
 	})
 
