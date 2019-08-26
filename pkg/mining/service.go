@@ -121,6 +121,9 @@ func AdjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
 	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(MineRate) * time.Millisecond) {
 		return lastBlock.Difficulty + 1
 	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(MineRate) * time.Millisecond) {
+		if lastBlock.Difficulty <= 1 {
+			return 1
+		}
 		return lastBlock.Difficulty - 1
 	}
 

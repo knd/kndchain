@@ -93,6 +93,17 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		// test verficiation
 		assert.Equal(uint32(2), difficulty)
 	})
+
+	t.Run("has minimum difficulty of 1 no matter what", func(t *testing.T) {
+		lastBlock.Difficulty = 0
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
+
+		// perform test
+		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+
+		// test verficiation
+		assert.Equal(uint32(1), difficulty)
+	})
 }
 
 func TestService(t *testing.T) {
