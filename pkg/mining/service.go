@@ -144,6 +144,7 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 	for {
 		nonce++
 		timestamp = time.Now()
+		difficulty = AdjustBlockDifficulty(*lastBlock, timestamp)
 		hash = hashing.SHA256Hash(timestamp, *lastBlock.Hash, data, nonce, difficulty)
 		if hash[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break
