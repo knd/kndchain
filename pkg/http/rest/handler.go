@@ -26,10 +26,40 @@ func getBlocks(l listing.Service) func(w http.ResponseWriter, r *http.Request, _
 	}
 }
 
+// MineBlockInput encapsulates data/txs in new block
+type MineBlockInput struct {
+	Data []string `json:"data"`
+}
+
 func mineBlock(m mining.Service, l listing.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		decoder := json.NewDecoder(r.Body)
+
+		var mineBlockInput MineBlockInput
+		err := decoder.Decode(&mineBlockInput)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
+		lb := l.GetLastBlock()
+		mb := &mining.Block{
+			Timestamp:  lb.Timestamp,
+			LastHash:   lb.LastHash,
+			Hash:       lb.Hash,
+			Data:       lb.Data,
+			Nonce:      lb.Nonce,
+			Difficulty: lb.Difficulty,
+		}
+		newBlock, err := m.MineNewBlock(mb, mineBlockInput.Data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		err = m.AddBlock(newBlock)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		// TODO: Implement this method
-		json.NewEncoder(w).Encode("newBlockMined")
+		json.NewEncoder(w).Encode(l.GetLastBlock())
 	}
 }
