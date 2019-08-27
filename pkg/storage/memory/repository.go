@@ -66,8 +66,8 @@ func (m *MemStorage) GetLastBlock() listing.Block {
 	}
 }
 
-// GetBlocks returns a list of blocks from genesis block
-func (m *MemStorage) GetBlocks() []listing.Block {
+// GetBlockchain returns a list of blocks from genesis block
+func (m *MemStorage) GetBlockchain() *listing.Blockchain {
 	var res []listing.Block
 	for _, block := range m.blockchain.chain {
 		res = append(res, listing.Block{
@@ -79,7 +79,7 @@ func (m *MemStorage) GetBlocks() []listing.Block {
 			Difficulty: block.Difficulty,
 		})
 	}
-	return res
+	return &listing.Blockchain{Chain: res}
 }
 
 // ReplaceChain replace the current blockchain with the newchain

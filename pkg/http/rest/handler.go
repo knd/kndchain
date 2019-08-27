@@ -22,7 +22,7 @@ func Handler(l listing.Service, m mining.Service) http.Handler {
 func getBlocks(l listing.Service) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(l.GetBlocks())
+		json.NewEncoder(w).Encode(l.GetBlockchain())
 	}
 }
 
