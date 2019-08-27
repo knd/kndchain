@@ -84,8 +84,8 @@ func (m *MemStorage) GetBlockchain() *listing.Blockchain {
 
 // ReplaceChain replace the current blockchain with the newchain
 func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
-	if newChain == nil || len(newChain.Chain) <= 1 {
-		log.Fatal("Blockchain is nil/ zero block/ or contains no genesis block")
+	if newChain == nil || len(newChain.Chain) < 1 {
+		log.Fatal("Blockchain is nil/ zero block")
 	}
 
 	newBc := []Block{}

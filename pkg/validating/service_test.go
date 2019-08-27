@@ -129,7 +129,7 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 		Nonce:      1,
 		Difficulty: 1,
 	}
-	blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data, blockA.Nonce, blockA.Difficulty)
+	blockAHash := hashing.SHA256Hash(timestamp1.Unix(), genesisHash, blockA.Data, blockA.Nonce, blockA.Difficulty)
 	blockA.Hash = &blockAHash
 
 	blockB := Block{
@@ -139,7 +139,7 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 		Nonce:      2,
 		Difficulty: 1,
 	}
-	blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data, blockB.Nonce, blockB.Difficulty)
+	blockBHash := hashing.SHA256Hash(timestamp2.Unix(), blockAHash, blockB.Data, blockB.Nonce, blockB.Difficulty)
 	blockB.Hash = &blockBHash
 
 	blockchain := &Blockchain{Chain: []Block{genesisBlock, blockA, blockB}}

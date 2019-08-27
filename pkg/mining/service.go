@@ -39,7 +39,7 @@ var ErrMissingLastBlock = errors.New("Missing last block")
 var ErrInvalidChain = errors.New("Invalid chain is given to replace original chain")
 
 // ErrShorterChain is used when trying to replace a shorter chain
-var ErrShorterChain = errors.New("Shorter chain is given to replace original chain")
+var ErrShorterChain = errors.New("Current chain is the longest, Incoming chain is no longer, No replacement")
 
 // Service provides block creating operations
 type Service interface {
@@ -148,7 +148,7 @@ func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) 
 		nonce++
 		timestamp = time.Now()
 		difficulty = AdjustBlockDifficulty(*lastBlock, timestamp)
-		hash = hashing.SHA256Hash(timestamp, *lastBlock.Hash, data, nonce, difficulty)
+		hash = hashing.SHA256Hash(timestamp.Unix(), *lastBlock.Hash, data, nonce, difficulty)
 		if HexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break
 		}
@@ -170,7 +170,9 @@ func HexStringToBinary(s string) string {
 
 // AddBlock adds a minedBlock into blockchain
 func (s *service) AddBlock(minedBlock *Block) error {
-	// TODO: validations of minedBlock
+	if minedBlock == nil {
+		return errors.New("No block provided to add")
+	}
 	return s.blockchain.AddBlock(minedBlock)
 }
 
@@ -186,7 +188,6 @@ func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []stri
 }
 
 func (s *service) ReplaceChain(newChain *Blockchain) error {
-	// validations
 	if newChain == nil {
 		return ErrInvalidChain
 	}
@@ -205,10 +206,12 @@ func toValidatingChain(newChain *Blockchain) *validating.Blockchain {
 	vBlockchain := &validating.Blockchain{}
 	for _, block := range newChain.Chain {
 		vBlock := &validating.Block{
-			Timestamp: block.Timestamp,
-			LastHash:  block.LastHash,
-			Hash:      block.Hash,
-			Data:      block.Data,
+			Timestamp:  block.Timestamp,
+			LastHash:   block.LastHash,
+			Hash:       block.Hash,
+			Data:       block.Data,
+			Nonce:      block.Nonce,
+			Difficulty: block.Difficulty,
 		}
 		vBlockchain.Chain = append(vBlockchain.Chain, *vBlock)
 	}

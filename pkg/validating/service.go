@@ -31,6 +31,7 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 	genesisBlock := bc.Chain[0]
 	prevTimestamp := genesisBlock.Timestamp
 	prevHash := genesisBlock.Hash
+	prevBlockDifficulty := genesisBlock.Difficulty
 
 	for i := 1; i < len(bc.Chain); i++ {
 		currBlock := bc.Chain[i]
@@ -45,16 +46,17 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 		}
 
 		// Prevent difficulty jump
-		if math.Abs(float64(genesisBlock.Difficulty-currBlock.Difficulty)) > 1 {
+		if math.Abs(float64(prevBlockDifficulty-currBlock.Difficulty)) > 1 {
 			return false
 		}
 
-		if hashing.SHA256Hash(currBlock.Timestamp, *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
+		if hashing.SHA256Hash(currBlock.Timestamp.Unix(), *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
 			return false
 		}
 
 		prevTimestamp = currBlock.Timestamp
 		prevHash = currBlock.Hash
+		prevBlockDifficulty = currBlock.Difficulty
 	}
 
 	return true

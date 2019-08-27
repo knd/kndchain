@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/knd/kndchain/pkg/http/rest"
@@ -12,6 +13,7 @@ import (
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
 	"github.com/knd/kndchain/pkg/storage/memory"
+	"github.com/knd/kndchain/pkg/syncing"
 	"github.com/knd/kndchain/pkg/validating"
 )
 
@@ -30,6 +32,9 @@ const (
 	// PubSub will communicate with peers via Redis pubsub
 	PubSub Type = iota
 )
+
+// BeaconNodePort is port on which the beacon node is running
+const BeaconNodePort int = 3000
 
 func main() {
 	storageType := Memory    // hard-coded
@@ -62,17 +67,32 @@ func main() {
 		}
 	}
 
-	// Add genesis block then broadcast to peers
-	genesisBlock, _ := mining.CreateGenesisBlock(nil)
-	miner.AddBlock(genesisBlock)
-	comm.BroadcastBlockchain(lister.GetBlockchain())
+	router := rest.Handler(lister, miner, comm)
 
-	router := rest.Handler(lister, miner)
+	var port int
+	if len(os.Args) > 1 && os.Args[1] == "beacon" {
+		port = BeaconNodePort
 
-	// Generate port from 3000 - 4000
-	rand.Seed(time.Now().UnixNano())
-	portShuffle := rand.Intn(1000)
-	randomPort := 3000 + portShuffle
-	fmt.Printf("Serving now on http://localhost:%d\n", randomPort)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", randomPort), router))
+		// Add genesis block then broadcast to peers
+		genesisBlock, _ := mining.CreateGenesisBlock(nil)
+		miner.AddBlock(genesisBlock)
+		comm.BroadcastBlockchain(lister.GetBlockchain())
+
+	} else {
+		// Generate port from 3000 - 4000
+		rand.Seed(time.Now().UnixNano())
+		portShuffle := rand.Intn(1000)
+		port = 3000 + portShuffle
+
+		log.Printf("Syncing blockchain. Current chain len: %d", lister.GetBlockCount())
+		syncer := syncing.NewService(miner)
+		err := syncer.SyncBlockchain(fmt.Sprintf("http://localhost:%d/api/blocks", BeaconNodePort))
+		if err != nil {
+			log.Println(err)
+		}
+		log.Printf("Syncing done. Synced chain len: %d", lister.GetBlockCount())
+	}
+
+	fmt.Printf("Serving now on http://localhost:%d\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 }

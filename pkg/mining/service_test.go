@@ -150,7 +150,7 @@ func TestService(t *testing.T) {
 		assert.NotEmpty(newBlock.Timestamp)
 		assert.Equal("0x456", *newBlock.LastHash)
 		assert.Equal("00", HexStringToBinary(*newBlock.Hash)[:newBlock.Difficulty])
-		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
+		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp.Unix(), *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
 		assert.Equal(data, newBlock.Data)
 	})
 

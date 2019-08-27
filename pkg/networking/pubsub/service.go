@@ -13,7 +13,7 @@ const (
 	// ChannelPubSub is channel name for publisher to send and subscribers to receive messages
 	ChannelPubSub = "kndchain"
 
-	// PortPubSub
+	// PortPubSub is port on which pubsub server is run
 	PortPubSub = ":6379"
 )
 
@@ -68,7 +68,10 @@ func (s *service) BroadcastBlockchain(bc *listing.Blockchain) error {
 		log.Fatal(err)
 	}
 	defer conn.Close()
+
+	// TODO: temporarily unsubscribe
 	_, err = conn.Do("PUBLISH", ChannelPubSub, string(b[:]))
+	// TODO: subscribe back to channel
 
 	return err
 }
@@ -84,9 +87,24 @@ func (s *service) SubscribePeers() error {
 		for conn.Err() == nil {
 			switch v := s.psc.Receive().(type) {
 			case redis.Message:
-				log.Printf("%s: message: %s\n", v.Channel, v.Data)
+				if v.Channel == ChannelPubSub {
+					var bc mining.Blockchain
+					var err error
+					err = json.Unmarshal(v.Data, &bc)
+					if err != nil {
+						continue
+					}
+					err = s.m.ReplaceChain(&bc)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					log.Printf("Replaced with longer chain. New len: %d", s.l.GetBlockCount())
+				}
+
 			case redis.Subscription:
-				log.Printf("%s: %s %d\n", v.Channel, v.Kind, v.Count)
+				log.Printf("Channel=%s, Kind=%s, Count=%d\n", v.Channel, v.Kind, v.Count)
+
 			case error:
 				log.Println(v)
 			}
