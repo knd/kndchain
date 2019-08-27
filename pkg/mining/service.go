@@ -111,7 +111,7 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 		blockNonce = genesisConfig.Nonce
 	}
 
-	var data []string
+	data := []string{}
 	if genesisConfig != nil && genesisConfig.Data != nil {
 		data = *genesisConfig.Data
 	}

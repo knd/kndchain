@@ -66,6 +66,22 @@ func (m *MemStorage) GetLastBlock() listing.Block {
 	}
 }
 
+// GetBlocks returns a list of blocks from genesis block
+func (m *MemStorage) GetBlocks() []listing.Block {
+	var res []listing.Block
+	for _, block := range m.blockchain.chain {
+		res = append(res, listing.Block{
+			Timestamp:  block.Timestamp,
+			LastHash:   block.LastHash,
+			Hash:       block.Hash,
+			Data:       block.Data,
+			Nonce:      block.Nonce,
+			Difficulty: block.Difficulty,
+		})
+	}
+	return res
+}
+
 // ReplaceChain replace the current blockchain with the newchain
 func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
 	if newChain == nil || len(newChain.Chain) <= 1 {

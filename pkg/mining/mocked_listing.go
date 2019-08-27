@@ -21,3 +21,9 @@ func (m *MockedListing) GetBlockCount() uint32 {
 	args := m.Called()
 	return uint32(args.Int(0))
 }
+
+// GetBlocks returns a list of blocks from genesis block
+func (m *MockedListing) GetBlocks() []listing.Block {
+	args := m.Called()
+	return args.Get(0).([]listing.Block)
+}

@@ -4,12 +4,14 @@ package listing
 type Repository interface {
 	GetLastBlock() Block
 	GetBlockCount() uint32
+	GetBlocks() []Block
 }
 
 // Service provides block listing operations
 type Service interface {
 	GetLastBlock() Block
 	GetBlockCount() uint32
+	GetBlocks() []Block
 }
 
 type service struct {
@@ -29,4 +31,9 @@ func (s *service) GetLastBlock() Block {
 // GetBlockCount returns the latest number of blocks in blockchain
 func (s *service) GetBlockCount() uint32 {
 	return s.r.GetBlockCount()
+}
+
+// GetBlocks returns a list of blocks from genesis block
+func (s *service) GetBlocks() []Block {
+	return s.r.GetBlocks()
 }
