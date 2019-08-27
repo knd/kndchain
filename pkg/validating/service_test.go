@@ -147,3 +147,47 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 	// perform test & verification
 	assert.True(t, validatingService.IsValidChain(blockchain))
 }
+
+func TestService_IsInvalidChainWhenLastBlockJumpsDifficulty(t *testing.T) {
+	validatingService := NewService()
+
+	genesisLastHash := "0x123"
+	genesisHash := "0x456"
+	genesisTimestamp := time.Now()
+	timestamp1 := time.Now().Add(time.Duration(100))
+	timestamp2 := time.Now().Add(time.Duration(200))
+
+	genesisBlock := Block{
+		Timestamp:  genesisTimestamp,
+		LastHash:   &genesisLastHash,
+		Hash:       &genesisHash,
+		Data:       []string{},
+		Nonce:      0,
+		Difficulty: 5,
+	}
+
+	blockA := Block{
+		Timestamp:  timestamp1,
+		LastHash:   &genesisHash,
+		Data:       []string{"txA"},
+		Nonce:      1,
+		Difficulty: 4,
+	}
+	blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data, blockA.Nonce, blockA.Difficulty)
+	blockA.Hash = &blockAHash
+
+	blockB := Block{
+		Timestamp:  timestamp2,
+		LastHash:   &blockAHash,
+		Data:       []string{"txB"},
+		Nonce:      2,
+		Difficulty: 2,
+	}
+	blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data, blockB.Nonce, blockB.Difficulty)
+	blockB.Hash = &blockBHash
+
+	blockchain := &Blockchain{Chain: []Block{genesisBlock, blockA, blockB}}
+
+	// perform test & verification
+	assert.False(t, validatingService.IsValidChain(blockchain))
+}

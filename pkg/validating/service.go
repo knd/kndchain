@@ -1,6 +1,8 @@
 package validating
 
 import (
+	"math"
+
 	"github.com/knd/kndchain/pkg/hashing"
 )
 
@@ -39,6 +41,11 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 		}
 
 		if *prevHash != *currBlock.LastHash {
+			return false
+		}
+
+		// Prevent difficulty jump
+		if math.Abs(float64(genesisBlock.Difficulty-currBlock.Difficulty)) > 1 {
 			return false
 		}
 
