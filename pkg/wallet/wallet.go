@@ -6,7 +6,7 @@ import (
 )
 
 // InitialBalance is the balance when wallet is created
-const InitialBalance uint64 = 0
+const InitialBalance uint64 = 1000
 
 // KeyPairGenerator provides access to key pair generating operations
 type KeyPairGenerator interface {
@@ -19,7 +19,7 @@ type KeyPairGenerator interface {
 type Wallet interface {
 	PubKey() []byte
 	PubKeyHex() string
-	Balance() int
+	Balance() uint64
 	Sign(data []byte) []byte
 }
 
@@ -55,8 +55,8 @@ func (w *wallet) PubKeyHex() string {
 }
 
 // Balance returns the current balance of wallet
-func (w *wallet) Balance() int {
-	return int(w.balance)
+func (w *wallet) Balance() uint64 {
+	return w.balance
 }
 
 // Sign returns a signed signature of input string

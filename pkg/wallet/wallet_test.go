@@ -20,7 +20,7 @@ func TestWallet_InitialBalanceOf1000(t *testing.T) {
 	w := NewWallet(crypto.NewSecp256k1Generator())
 
 	// test verification
-	assert.Equal(t, int(InitialBalance), w.Balance())
+	assert.Equal(t, InitialBalance, w.Balance())
 }
 
 func TestWallet_SigningData(t *testing.T) {
