@@ -37,7 +37,7 @@ func (s *Secp256k1Generator) Generate() (pubKey, privKey []byte) {
 }
 
 // Verify checks that the given pubKey created signature over msg
-func (s *Secp256k1Generator) Verify(pubKey, msg, signature []byte) bool {
+func (s *Secp256k1Generator) Verify(pubKey, msg []byte, signature [65]byte) bool {
 	msgHash, err := sha256Hash(msg)
 	if err != nil {
 		return false
@@ -48,14 +48,22 @@ func (s *Secp256k1Generator) Verify(pubKey, msg, signature []byte) bool {
 }
 
 // Sign creates a recoverable ECDSA signature
-func (s *Secp256k1Generator) Sign(msg, privKey []byte) ([]byte, error) {
+func (s *Secp256k1Generator) Sign(msg, privKey []byte) ([65]byte, error) {
 	msgHash, err := sha256Hash(msg)
 	if err != nil {
-		return nil, err
+		return [65]byte{}, err
 	}
 
 	// Sign creates a recoverable ECDSA signature. The produced signature is in the 65-byte [R || S || V] format where V is 0 or 1
-	return secp256k1.Sign(msgHash, privKey)
+	signature, err := secp256k1.Sign(msgHash, privKey)
+
+	if err != nil {
+		return [65]byte{}, err
+	}
+
+	var res [65]byte
+	copy(res[:], signature)
+	return res, nil
 }
 
 func sha256Hash(data []byte) ([]byte, error) {

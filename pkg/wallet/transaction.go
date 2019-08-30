@@ -3,10 +3,13 @@ package wallet
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/hex"
+	"errors"
 	"log"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/knd/kndchain/pkg/crypto"
 )
 
 // TxInput of transaction which composes of `timestamp`, `sender current balance amount`, `sender address`, `signature` of transaction output
@@ -14,7 +17,7 @@ type TxInput struct {
 	Timestamp int64
 	Amount    uint64
 	Address   string
-	Signature []byte
+	Signature [65]byte
 }
 
 // TxOutput of transaction which composes of `receiver amount` and `remaining sender balance`
@@ -80,4 +83,48 @@ func GetBytes(key interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// ErrInvalidOutputTotalBalance invalid output total balance compared with input amount
+var ErrInvalidOutputTotalBalance = errors.New("Output has invalid total balance")
+
+// ErrInvalidSignature invalid signature
+var ErrInvalidSignature = errors.New("Signature is invalid")
+
+// ErrInvalidPubKey invalid public key
+var ErrInvalidPubKey = errors.New("Invalid public key")
+
+// ErrCannotGetOutputBytes indicates error obtaining output bytes
+var ErrCannotGetOutputBytes = errors.New("Cannot obtain output bytes")
+
+// IsValidTransaction returns true if transaction itself contains
+// valid input and output information
+func IsValidTransaction(tx Transaction) (bool, error) {
+	i := tx.GetInput()
+	o := tx.GetOutput()
+
+	var oBalance uint64
+	for _, oAmount := range o {
+		oBalance += oAmount
+	}
+
+	if i.Amount != oBalance {
+		return false, ErrInvalidOutputTotalBalance
+	}
+
+	pubKeyInByte, err := hex.DecodeString(i.Address)
+	if err != nil {
+		return false, ErrInvalidPubKey
+	}
+
+	outputBytes, err := GetBytes(o)
+	if err != nil {
+		return false, ErrCannotGetOutputBytes
+	}
+
+	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, i.Signature) {
+		return false, ErrInvalidSignature
+	}
+
+	return true, nil
 }

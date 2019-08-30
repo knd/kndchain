@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"testing"
+	"time"
 
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/stretchr/testify/assert"
@@ -67,5 +68,74 @@ func TestTransaction_Input(t *testing.T) {
 		ob, _ := GetBytes(tx.GetOutput())
 
 		assert.True(secp256k1.Verify(senderWallet.PubKey(), ob, tx.GetInput().Signature))
+	})
+}
+
+func TestIsValidTransaction(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("returns true if tx is valid", func(t *testing.T) {
+		secp256k1 := crypto.NewSecp256k1Generator()
+		senderWallet := NewWallet(secp256k1)
+		receiverWallet := NewWallet(secp256k1)
+
+		// perform test
+		tx := NewTransaction(senderWallet, receiverWallet.PubKeyHex(), 99)
+
+		// test verification
+		assert.True(IsValidTransaction(tx))
+	})
+
+	t.Run("returns false if tx ouptut is invalid", func(t *testing.T) {
+		iT := time.Now().Unix()
+		senderPubKeyHex := "0x123"
+		receiverPubKeyHex := "0x456"
+		tx := new(MockedTransaction)
+		var s [65]byte
+		copy(s[:], []byte("data"))
+		tx.On("GetInput").Return(TxInput{
+			Timestamp: iT,
+			Amount:    1000,
+			Address:   senderPubKeyHex,
+			Signature: s,
+		})
+		tx.On("GetOutput").Return(TxOutput{
+			senderPubKeyHex:   991,
+			receiverPubKeyHex: 10,
+		})
+
+		// perform test
+		valid, err := IsValidTransaction(tx)
+
+		// test verification
+		assert.False(valid)
+		assert.Equal(ErrInvalidOutputTotalBalance, err)
+	})
+
+	t.Run("returns false if tx input signature invalid", func(t *testing.T) {
+		iT := time.Now().Unix()
+		secp256k1 := crypto.NewSecp256k1Generator()
+		senderWallet := NewWallet(secp256k1)
+		receiverWallet := NewWallet(secp256k1)
+		tx := new(MockedTransaction)
+		var s [65]byte
+		copy(s[:], []byte("data"))
+		tx.On("GetInput").Return(TxInput{
+			Timestamp: iT,
+			Amount:    1000,
+			Address:   senderWallet.PubKeyHex(),
+			Signature: s,
+		})
+		tx.On("GetOutput").Return(TxOutput{
+			senderWallet.PubKeyHex():   uint64(990),
+			receiverWallet.PubKeyHex(): uint64(10),
+		})
+
+		// perform test
+		valid, err := IsValidTransaction(tx)
+
+		// test verification
+		assert.False(valid)
+		assert.Equal(ErrInvalidSignature, err)
 	})
 }
