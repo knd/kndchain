@@ -126,9 +126,16 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 	return true, nil
 }
 
+// ErrAmountExceedsBalance indicates amount to be sent exceeds the sender remaining balance
+var ErrAmountExceedsBalance = errors.New("Amount exceeds sender balance")
+
 // Append adds more amount and receiver
 func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
-	if amount, ok := t.receiverAmounts[receiver]; ok {
+	if amount > t.GetOutput()[w.PubKeyHex()] {
+		return ErrAmountExceedsBalance
+	}
+
+	if _, ok := t.receiverAmounts[receiver]; ok {
 		t.receiverAmounts[receiver] += amount
 		return nil
 	}

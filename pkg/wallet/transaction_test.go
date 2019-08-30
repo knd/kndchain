@@ -183,6 +183,10 @@ func TestTransaction_Append(t *testing.T) {
 	// perform test
 	tx.Append(senderWallet, receiverBWallet.PubKeyHex(), 20)
 
+	t.Run("returns error if append amount is greater than sender current output balance", func(t *testing.T) {
+		assert.Equal(ErrAmountExceedsBalance, tx.Append(senderWallet, receiverBWallet.PubKeyHex(), 971))
+	})
+
 	t.Run("outputs the amount to receiver B", func(t *testing.T) {
 		assert.Equal(uint64(20), tx.GetOutput()[receiverBWallet.PubKeyHex()])
 	})
@@ -202,5 +206,14 @@ func TestTransaction_Append(t *testing.T) {
 
 	t.Run("resigns the transaction in tx input", func(t *testing.T) {
 		assert.NotEqual(tx.GetInput().Signature, originalSignature)
+	})
+
+	t.Run("updates the receiverB output amount", func(t *testing.T) {
+		err := tx.Append(senderWallet, receiverBWallet.PubKeyHex(), 10)
+
+		assert.Nil(err)
+		assert.Equal(int(10), int(tx.GetOutput()[receiverAWallet.PubKeyHex()]))
+		assert.Equal(int(960), int(tx.GetOutput()[senderWallet.PubKeyHex()]))
+		assert.Equal(int(30), int(tx.GetOutput()[receiverBWallet.PubKeyHex()]))
 	})
 }
