@@ -27,22 +27,24 @@ type Transaction interface {
 	GetID() string
 	GetInput() TxInput
 	GetOutput() TxOutput
+	Append(w Wallet, r string, amount uint64) error
 }
 
 type transaction struct {
-	ID           string
-	senderWallet Wallet
-	receiver     string
-	amount       uint64
+	ID              string
+	senderWallet    Wallet
+	receiverAmounts map[string]uint64
 }
 
 // NewTransaction creates a transaction
 func NewTransaction(s Wallet, r string, amount uint64) Transaction {
+	ra := make(map[string]uint64)
+	ra[r] = amount
+
 	return &transaction{
-		ID:           uuid.New().String(),
-		senderWallet: s,
-		receiver:     r,
-		amount:       amount,
+		ID:              uuid.New().String(),
+		senderWallet:    s,
+		receiverAmounts: ra,
 	}
 }
 
@@ -53,8 +55,15 @@ func (t *transaction) GetID() string {
 func (t *transaction) GetOutput() TxOutput {
 	o := make(map[string]uint64)
 
-	o[t.receiver] = t.amount
-	o[t.senderWallet.PubKeyHex()] = t.senderWallet.Balance() - t.amount
+	// o[t.receiver] = t.amount
+	// o[t.senderWallet.PubKeyHex()] = t.senderWallet.Balance() - t.amount
+
+	var rAmountTotal uint64
+	for rAddress, amount := range t.receiverAmounts {
+		o[rAddress] = amount
+		rAmountTotal += amount
+	}
+	o[t.senderWallet.PubKeyHex()] = t.senderWallet.Balance() - rAmountTotal
 
 	return o
 }
@@ -115,4 +124,16 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Append adds more amount and receiver
+func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
+	if amount, ok := t.receiverAmounts[receiver]; ok {
+		t.receiverAmounts[receiver] += amount
+		return nil
+	}
+
+	t.receiverAmounts[receiver] = amount
+
+	return nil
 }

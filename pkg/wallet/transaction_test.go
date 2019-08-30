@@ -169,3 +169,38 @@ func TestIsValidTransaction(t *testing.T) {
 		assert.Equal(ErrInvalidSignature, err)
 	})
 }
+
+func TestTransaction_Append(t *testing.T) {
+	assert := assert.New(t)
+	secp256k1 := crypto.NewSecp256k1Generator()
+	senderWallet := NewWallet(secp256k1)
+	receiverAWallet := NewWallet(secp256k1)
+	receiverBWallet := NewWallet(secp256k1)
+	tx := NewTransaction(senderWallet, receiverAWallet.PubKeyHex(), 10)
+
+	originalSignature := tx.GetInput().Signature
+
+	// perform test
+	tx.Append(senderWallet, receiverBWallet.PubKeyHex(), 20)
+
+	t.Run("outputs the amount to receiver B", func(t *testing.T) {
+		assert.Equal(uint64(20), tx.GetOutput()[receiverBWallet.PubKeyHex()])
+	})
+
+	t.Run("outputs updated remaining amount of sender", func(t *testing.T) {
+		assert.Equal(uint64(970), tx.GetOutput()[senderWallet.PubKeyHex()])
+	})
+
+	t.Run("maintains total output balance that matches input amount", func(t *testing.T) {
+		var oBalance uint64
+		for _, a := range tx.GetOutput() {
+			oBalance += a
+		}
+
+		assert.Equal(tx.GetInput().Amount, oBalance)
+	})
+
+	t.Run("resigns the transaction in tx input", func(t *testing.T) {
+		assert.NotEqual(tx.GetInput().Signature, originalSignature)
+	})
+}

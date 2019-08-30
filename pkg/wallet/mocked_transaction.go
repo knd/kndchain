@@ -26,3 +26,9 @@ func (m *MockedTransaction) GetOutput() TxOutput {
 	args := m.Called()
 	return args.Get(0).(TxOutput)
 }
+
+// Append updates another tx receiver with another amount
+func (m *MockedTransaction) Append(w Wallet, receiver string, amount uint64) error {
+	args := m.Called(w, receiver, amount)
+	return args.Error(0)
+}
