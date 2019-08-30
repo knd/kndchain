@@ -65,12 +65,6 @@ func (t *transaction) GetInput() TxInput {
 		log.Fatal(err)
 	}
 
-	// fmt.Printf("\n\n====ID=%s\n", t.GetID())
-	// fmt.Printf("pubkey=%s, output=%s, signature=%s\n", t.senderWallet.PubKeyHex(), hex.EncodeToString(ob), hex.EncodeToString(t.senderWallet.Sign(ob)))
-	// fmt.Println()
-	// fmt.Println(t.GetOutput()[t.receiver])
-	// fmt.Println(t.GetOutput()[t.senderWallet.PubKeyHex()])
-
 	return TxInput{
 		Timestamp: time.Now().Unix(),
 		Amount:    t.senderWallet.Balance(),
@@ -115,10 +109,6 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 	if err != nil {
 		return false, ErrCannotGetOutputBytes
 	}
-
-	// fmt.Println("====IsValidTransaction()")
-	// fmt.Println(tx.GetOutput())
-	// fmt.Printf("pubkey=%s, output=%s, signature=%s\n", i.Address, hex.EncodeToString(outputBytes), hex.EncodeToString(i.Signature))
 
 	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, i.Signature) {
 		return false, ErrInvalidSignature
