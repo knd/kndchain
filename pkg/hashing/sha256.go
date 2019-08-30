@@ -9,7 +9,7 @@ import (
 	"github.com/knd/kndchain/pkg/sorting"
 )
 
-// SHA256Hash returns a determistic 256 bit hash given a set of inputs
+// SHA256Hash returns a determistic 256 bit hash in hex form given a set of inputs
 func SHA256Hash(inputs ...interface{}) string {
 	h := sha256.New()
 

@@ -11,8 +11,8 @@ const InitialBalance uint64 = 1000
 // KeyPairGenerator provides access to key pair generating operations
 type KeyPairGenerator interface {
 	Generate() (pubKey, privKey []byte)
-	Sign(msg, privKey []byte) ([65]byte, error)
-	Verify(pubKey, msg []byte, signature [65]byte) bool
+	Sign(msg, privKey []byte) ([]byte, error)
+	Verify(pubKey, msg, signature []byte) bool
 }
 
 // Wallet provides access to wallet operations
@@ -20,7 +20,7 @@ type Wallet interface {
 	PubKey() []byte
 	PubKeyHex() string
 	Balance() uint64
-	Sign(data []byte) [65]byte
+	Sign(data []byte) []byte
 }
 
 type wallet struct {
@@ -60,7 +60,7 @@ func (w *wallet) Balance() uint64 {
 }
 
 // Sign returns a signed signature of input string
-func (w *wallet) Sign(data []byte) [65]byte {
+func (w *wallet) Sign(data []byte) []byte {
 	b, err := w.gen.Sign(data, w.privateKey)
 	if err != nil {
 		log.Fatal(err)

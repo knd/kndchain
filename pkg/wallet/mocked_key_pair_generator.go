@@ -16,13 +16,13 @@ func (m *MockedKeyPairGenerator) Generate() (pubKey, privKey []byte) {
 }
 
 // Verify pubkey, msg, and signature
-func (m *MockedKeyPairGenerator) Verify(pubKey, msg []byte, signature [65]byte) bool {
+func (m *MockedKeyPairGenerator) Verify(pubKey, msg, signature []byte) bool {
 	args := m.Called(pubKey, msg, signature)
 	return args.Bool(0)
 }
 
 // Sign msg with private key to obtain signature
-func (m *MockedKeyPairGenerator) Sign(msg, privKey []byte) ([65]byte, error) {
+func (m *MockedKeyPairGenerator) Sign(msg, privKey []byte) ([]byte, error) {
 	args := m.Called(msg, privKey)
-	return args.Get(0).([65]byte), args.Error(0)
+	return args.Get(0).([]byte), args.Error(0)
 }

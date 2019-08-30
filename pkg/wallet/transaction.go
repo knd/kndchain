@@ -1,8 +1,6 @@
 package wallet
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/hex"
 	"errors"
 	"log"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/knd/kndchain/pkg/crypto"
+	"github.com/knd/kndchain/pkg/hashing"
 )
 
 // TxInput of transaction which composes of `timestamp`, `sender current balance amount`, `sender address`, `signature` of transaction output
@@ -17,7 +16,7 @@ type TxInput struct {
 	Timestamp int64
 	Amount    uint64
 	Address   string
-	Signature [65]byte
+	Signature []byte
 }
 
 // TxOutput of transaction which composes of `receiver amount` and `remaining sender balance`
@@ -61,10 +60,16 @@ func (t *transaction) GetOutput() TxOutput {
 }
 
 func (t *transaction) GetInput() TxInput {
-	ob, err := GetBytes(t.GetOutput())
+	ob, err := hex.DecodeString(hashing.SHA256Hash(t.GetOutput()))
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// fmt.Printf("\n\n====ID=%s\n", t.GetID())
+	// fmt.Printf("pubkey=%s, output=%s, signature=%s\n", t.senderWallet.PubKeyHex(), hex.EncodeToString(ob), hex.EncodeToString(t.senderWallet.Sign(ob)))
+	// fmt.Println()
+	// fmt.Println(t.GetOutput()[t.receiver])
+	// fmt.Println(t.GetOutput()[t.senderWallet.PubKeyHex()])
 
 	return TxInput{
 		Timestamp: time.Now().Unix(),
@@ -72,17 +77,6 @@ func (t *transaction) GetInput() TxInput {
 		Address:   t.senderWallet.PubKeyHex(),
 		Signature: t.senderWallet.Sign(ob),
 	}
-}
-
-// GetBytes returns bytes of any Go inteface
-func GetBytes(key interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(key)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 // ErrInvalidOutputTotalBalance invalid output total balance compared with input amount
@@ -117,10 +111,14 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 		return false, ErrInvalidPubKey
 	}
 
-	outputBytes, err := GetBytes(o)
+	outputBytes, err := hex.DecodeString(hashing.SHA256Hash(tx.GetOutput()))
 	if err != nil {
 		return false, ErrCannotGetOutputBytes
 	}
+
+	// fmt.Println("====IsValidTransaction()")
+	// fmt.Println(tx.GetOutput())
+	// fmt.Printf("pubkey=%s, output=%s, signature=%s\n", i.Address, hex.EncodeToString(outputBytes), hex.EncodeToString(i.Signature))
 
 	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, i.Signature) {
 		return false, ErrInvalidSignature
