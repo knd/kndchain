@@ -2,11 +2,15 @@ package wallet
 
 import (
 	"encoding/hex"
+	"errors"
 	"log"
 )
 
 // InitialBalance is the balance when wallet is created
 const InitialBalance uint64 = 1000
+
+// ErrTxAmountExceedsBalance indicates tx amount exceeds current balance
+var ErrTxAmountExceedsBalance = errors.New("Tx amount exceeds balance")
 
 // KeyPairGenerator provides access to key pair generating operations
 type KeyPairGenerator interface {
@@ -21,6 +25,7 @@ type Wallet interface {
 	PubKeyHex() string
 	Balance() uint64
 	Sign(data []byte) []byte
+	CreateTransaction(receiver string, amount uint64) (Transaction, error)
 }
 
 type wallet struct {
@@ -67,4 +72,13 @@ func (w *wallet) Sign(data []byte) []byte {
 	}
 
 	return b
+}
+
+// CreateTransaction creates a new transaction from this wallet
+func (w *wallet) CreateTransaction(receiver string, amount uint64) (Transaction, error) {
+	if amount > w.Balance() {
+		return nil, ErrTxAmountExceedsBalance
+	}
+
+	return NewTransaction(w, receiver, amount), nil
 }

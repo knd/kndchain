@@ -50,3 +50,27 @@ func TestWallet_SigningData(t *testing.T) {
 		assert.False(secp256k1.Verify(w.PubKey(), data, signature))
 	})
 }
+
+func TestWallet_CreateTransaction(t *testing.T) {
+	assert := assert.New(t)
+	secp256k1 := crypto.NewSecp256k1Generator()
+	senderWallet := NewWallet(secp256k1)
+	receiverWallet := NewWallet(secp256k1)
+	txA, errA := senderWallet.CreateTransaction(receiverWallet.PubKeyHex(), 99)
+	txB, errB := senderWallet.CreateTransaction(receiverWallet.PubKeyHex(), 1001)
+
+	t.Run("created transaction with input matched wallet", func(t *testing.T) {
+		assert.Nil(errA)
+		assert.Equal(senderWallet.PubKeyHex(), txA.GetInput().Address)
+		assert.Equal(senderWallet.Balance(), txA.GetInput().Amount)
+	})
+
+	t.Run("created transaction with output containing receiver amount", func(t *testing.T) {
+		assert.Equal(uint64(99), txA.GetOutput()[receiverWallet.PubKeyHex()])
+	})
+
+	t.Run("fails to create transaction with amount exceeding balance", func(t *testing.T) {
+		assert.Equal(errB, ErrTxAmountExceedsBalance)
+		assert.Nil(txB)
+	})
+}
