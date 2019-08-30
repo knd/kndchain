@@ -3,6 +3,7 @@ package wallet
 import (
 	"testing"
 
+	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,4 +40,32 @@ func TestTransaction_OutputHasRemainingBalanceOfSenderWallet(t *testing.T) {
 
 	// test verification
 	assert.Equal(t, uint64(999), tx.GetOutput()[w.PubKeyHex()])
+}
+
+func TestTransaction_Input(t *testing.T) {
+	assert := assert.New(t)
+	secp256k1 := crypto.NewSecp256k1Generator()
+	senderWallet := NewWallet(secp256k1)
+	receiverWallet := NewWallet(secp256k1)
+
+	// perform test
+	tx := NewTransaction(senderWallet, receiverWallet.PubKeyHex(), 99)
+
+	t.Run("has timestamp", func(t *testing.T) {
+		assert.NotZero(tx.GetInput().Timestamp)
+	})
+
+	t.Run("sets `amount` to the `senderWallet` balance", func(t *testing.T) {
+		assert.Equal(InitialBalance, tx.GetInput().Amount)
+	})
+
+	t.Run("sets `address` to the `senderWallet` pubKey", func(t *testing.T) {
+		assert.Equal(senderWallet.PubKeyHex(), tx.GetInput().Address)
+	})
+
+	t.Run("signs the input with senderWallet privKey", func(t *testing.T) {
+		ob, _ := GetBytes(tx.GetOutput())
+
+		assert.True(secp256k1.Verify(senderWallet.PubKey(), ob, tx.GetInput().Signature))
+	})
 }
