@@ -2,6 +2,7 @@ package wallet
 
 // TransactionPool provides access to tx pool operations
 type TransactionPool interface {
+	All() map[string]Transaction
 	Get(id string) Transaction
 	GetTransaction(inputAddress string) Transaction
 	Add(tx Transaction) error
@@ -17,6 +18,10 @@ func NewTransactionPool() TransactionPool {
 	return &transactionPool{
 		transactions: make(map[string]Transaction),
 	}
+}
+
+func (p *transactionPool) All() map[string]Transaction {
+	return p.transactions
 }
 
 func (p *transactionPool) Get(id string) Transaction {

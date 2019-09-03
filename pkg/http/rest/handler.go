@@ -21,6 +21,7 @@ func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.Tra
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
 	router.POST("/api/transactions", addTx(p, w))
+	router.GET("/api/transactions", getTxPool(p))
 
 	return router
 }
@@ -87,7 +88,7 @@ type txInput struct {
 	Signature string `json:"sig"`
 }
 
-type addTxOutput struct {
+type txOutput struct {
 	ID     string            `json:"id"`
 	Output map[string]uint64 `json:"output"`
 	Input  txInput           `json:"input"`
@@ -117,17 +118,36 @@ func addTx(p wallet.TransactionPool, sw wallet.Wallet) func(w http.ResponseWrite
 		}
 		p.Add(tx)
 
-		// marshalling
-		o := addTxOutput{}
-		o.ID = tx.GetID()
-		o.Output = tx.GetOutput()
-		i := tx.GetInput()
-		o.Input.Timestamp = i.Timestamp
-		o.Input.Amount = i.Amount
-		o.Input.Address = i.Address
-		o.Input.Signature = hex.EncodeToString(i.Signature)
-
+		o := toTxOuptut(tx)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(o)
 	}
+}
+
+type txPoolOutput map[string]txOutput
+
+func getTxPool(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		output := txPoolOutput{}
+
+		for _, tx := range p.All() {
+			output[tx.GetID()] = toTxOuptut(tx)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(output)
+	}
+}
+
+func toTxOuptut(tx wallet.Transaction) txOutput {
+	o := txOutput{}
+	o.ID = tx.GetID()
+	o.Output = tx.GetOutput()
+	i := tx.GetInput()
+	o.Input.Timestamp = i.Timestamp
+	o.Input.Amount = i.Amount
+	o.Input.Address = i.Address
+	o.Input.Signature = hex.EncodeToString(i.Signature)
+
+	return o
 }
