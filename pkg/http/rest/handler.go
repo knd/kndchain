@@ -18,7 +18,7 @@ func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.Tra
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
-	router.POST("/api/transactions", addTx(p, wal))
+	router.POST("/api/transactions", addTx(p, wal, c))
 	router.GET("/api/transactions", getTxPool(p))
 
 	return router
@@ -92,7 +92,7 @@ type addTxInput struct {
 // 	Input  txInput           `json:"input"`
 // }
 
-func addTx(p wallet.TransactionPool, wal wallet.Wallet) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func addTx(p wallet.TransactionPool, wal wallet.Wallet, c pubsub.Service) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -115,6 +115,7 @@ func addTx(p wallet.TransactionPool, wal wallet.Wallet) func(w http.ResponseWrit
 			return
 		}
 		p.Add(tx)
+		c.BroadcastTransaction(tx)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(tx)

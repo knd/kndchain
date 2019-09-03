@@ -30,7 +30,8 @@ type Transaction interface {
 	Append(w Wallet, r string, amount uint64) error
 }
 
-type transaction struct {
+// Tx encapsulates necessary transaction info
+type Tx struct {
 	ID     string `json:"id"`
 	Input  Input  `json:"input"`
 	Output Output `json:"output"`
@@ -41,7 +42,7 @@ var ErrAmountExceedsBalance = errors.New("Amount exceeds sender balance")
 
 // NewTransaction creates a transaction
 func NewTransaction(w Wallet, r string, amount uint64) Transaction {
-	tx := &transaction{ID: uuid.New().String()}
+	tx := &Tx{ID: uuid.New().String()}
 	tx.Output = tx.generateOutput(w, r, amount)
 	tx.Input = tx.generateInput(w, tx.Output)
 
@@ -49,7 +50,7 @@ func NewTransaction(w Wallet, r string, amount uint64) Transaction {
 }
 
 // Append adds more amount and receiver
-func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
+func (t *Tx) Append(w Wallet, receiver string, amount uint64) error {
 	if amount > t.Output[w.PubKeyHex()] {
 		return ErrAmountExceedsBalance
 	}
@@ -66,26 +67,26 @@ func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
 	return nil
 }
 
-func (t *transaction) GetInput() Input {
+func (t *Tx) GetInput() Input {
 	return t.Input
 }
 
-func (t *transaction) GetOutput() Output {
+func (t *Tx) GetOutput() Output {
 	return t.Output
 }
 
-func (t *transaction) GetID() string {
+func (t *Tx) GetID() string {
 	return t.ID
 }
 
-func (t *transaction) generateOutput(w Wallet, receiver string, amount uint64) Output {
+func (t *Tx) generateOutput(w Wallet, receiver string, amount uint64) Output {
 	o := Output{}
 	o[receiver] = amount
 	o[w.PubKeyHex()] = w.Balance() - amount
 	return o
 }
 
-func (t *transaction) generateInput(w Wallet, op Output) Input {
+func (t *Tx) generateInput(w Wallet, op Output) Input {
 	ob, err := hex.DecodeString(hashing.SHA256Hash(op))
 	if err != nil {
 		log.Fatal(err)

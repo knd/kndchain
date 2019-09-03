@@ -119,10 +119,13 @@ func (s *service) SubscribePeers() error {
 			case redis.Message:
 				if v.Channel == ChannelPubSub {
 					// Received incoming blockchain
+					// Replace incoming blockchain if valid longest chain
 					var bc mining.Blockchain
 					var err error
 					err = json.Unmarshal(v.Data, &bc)
 					if err != nil {
+						log.Println(err)
+						log.Println("Coudn't unmarshall incoming blockchain")
 						continue
 					}
 					err = s.m.ReplaceChain(&bc)
@@ -134,7 +137,16 @@ func (s *service) SubscribePeers() error {
 				} else if v.Channel == ChannelTransactions {
 					// Received incoming transaction
 					// add transaction to pool
-
+					var tx wallet.Tx
+					var err error
+					err = json.Unmarshal(v.Data, &tx)
+					if err != nil {
+						log.Println(err)
+						log.Println("Couldn't unmarshall incoming transaction")
+						continue
+					}
+					s.p.Add(&tx)
+					log.Printf("Transaction received. ID=%s", tx.GetID())
 				}
 
 			case redis.Subscription:
