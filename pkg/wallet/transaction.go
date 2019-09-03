@@ -11,74 +11,91 @@ import (
 	"github.com/knd/kndchain/pkg/hashing"
 )
 
-// TxInput of transaction which composes of `timestamp`, `sender current balance amount`, `sender address`, `signature` of transaction output
-type TxInput struct {
-	Timestamp int64
-	Amount    uint64
-	Address   string
-	Signature []byte
+// Input of transaction
+type Input struct {
+	Timestamp int64  `json:"timestamp"`
+	Amount    uint64 `json:"amount"`
+	Address   string `json:"address"`
+	Signature string `json:"sig"`
 }
 
-// TxOutput of transaction which composes of `receiver amount` and `remaining sender balance`
-type TxOutput map[string]uint64
+// Output of transaction
+type Output map[string]uint64
 
 // Transaction provides access to transacting info
 type Transaction interface {
 	GetID() string
-	GetInput() TxInput
-	GetOutput() TxOutput
+	GetInput() Input
+	GetOutput() Output
 	Append(w Wallet, r string, amount uint64) error
 }
 
 type transaction struct {
-	ID              string
-	senderWallet    Wallet
-	receiverAmounts map[string]uint64
+	ID     string `json:"id"`
+	Input  Input  `json:"input"`
+	Output Output `json:"output"`
 }
 
-// NewTransaction creates a transaction
-func NewTransaction(s Wallet, r string, amount uint64) Transaction {
-	ra := make(map[string]uint64)
-	ra[r] = amount
+// ErrAmountExceedsBalance indicates amount to be sent exceeds the sender remaining balance
+var ErrAmountExceedsBalance = errors.New("Amount exceeds sender balance")
 
-	return &transaction{
-		ID:              uuid.New().String(),
-		senderWallet:    s,
-		receiverAmounts: ra,
+// NewTransaction creates a transaction
+func NewTransaction(w Wallet, r string, amount uint64) Transaction {
+	tx := &transaction{ID: uuid.New().String()}
+	tx.Output = tx.generateOutput(w, r, amount)
+	tx.Input = tx.generateInput(w, tx.Output)
+
+	return tx
+}
+
+// Append adds more amount and receiver
+func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
+	if amount > t.Output[w.PubKeyHex()] {
+		return ErrAmountExceedsBalance
 	}
+
+	if _, ok := t.Output[receiver]; ok {
+		t.Output[receiver] += amount
+	} else {
+		t.Output[receiver] = amount
+	}
+
+	t.Output[w.PubKeyHex()] -= amount
+	t.Input = t.generateInput(w, t.Output)
+
+	return nil
+}
+
+func (t *transaction) GetInput() Input {
+	return t.Input
+}
+
+func (t *transaction) GetOutput() Output {
+	return t.Output
 }
 
 func (t *transaction) GetID() string {
 	return t.ID
 }
 
-func (t *transaction) GetOutput() TxOutput {
-	o := make(map[string]uint64)
-
-	// o[t.receiver] = t.amount
-	// o[t.senderWallet.PubKeyHex()] = t.senderWallet.Balance() - t.amount
-
-	var rAmountTotal uint64
-	for rAddress, amount := range t.receiverAmounts {
-		o[rAddress] = amount
-		rAmountTotal += amount
-	}
-	o[t.senderWallet.PubKeyHex()] = t.senderWallet.Balance() - rAmountTotal
-
+func (t *transaction) generateOutput(w Wallet, receiver string, amount uint64) Output {
+	o := Output{}
+	o[receiver] = amount
+	o[w.PubKeyHex()] = w.Balance() - amount
 	return o
 }
 
-func (t *transaction) GetInput() TxInput {
-	ob, err := hex.DecodeString(hashing.SHA256Hash(t.GetOutput()))
+func (t *transaction) generateInput(w Wallet, op Output) Input {
+	ob, err := hex.DecodeString(hashing.SHA256Hash(op))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return TxInput{
+	return Input{
 		Timestamp: time.Now().Unix(),
-		Amount:    t.senderWallet.Balance(),
-		Address:   t.senderWallet.PubKeyHex(),
-		Signature: t.senderWallet.Sign(ob),
+		Amount:    w.Balance(),
+		Address:   w.PubKeyHex(),
+		Signature: hex.EncodeToString(w.Sign(ob)),
 	}
 }
 
@@ -119,28 +136,10 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 		return false, ErrCannotGetOutputBytes
 	}
 
-	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, i.Signature) {
+	sigBytes, _ := hex.DecodeString(i.Signature)
+	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, sigBytes) {
 		return false, ErrInvalidSignature
 	}
 
 	return true, nil
-}
-
-// ErrAmountExceedsBalance indicates amount to be sent exceeds the sender remaining balance
-var ErrAmountExceedsBalance = errors.New("Amount exceeds sender balance")
-
-// Append adds more amount and receiver
-func (t *transaction) Append(w Wallet, receiver string, amount uint64) error {
-	if amount > t.GetOutput()[w.PubKeyHex()] {
-		return ErrAmountExceedsBalance
-	}
-
-	if _, ok := t.receiverAmounts[receiver]; ok {
-		t.receiverAmounts[receiver] += amount
-		return nil
-	}
-
-	t.receiverAmounts[receiver] = amount
-
-	return nil
 }

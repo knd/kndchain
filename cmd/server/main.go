@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/knd/kndchain/pkg/crypto"
-
 	"github.com/knd/kndchain/pkg/wallet"
 
 	"github.com/knd/kndchain/pkg/http/rest"
@@ -48,6 +47,8 @@ func main() {
 	var lister listing.Service
 	var validator validating.Service
 	var comm pubsub.Service
+	wal := wallet.NewWallet(crypto.NewSecp256k1Generator())
+	pool := wallet.NewTransactionPool()
 
 	switch storageType {
 	case Memory:
@@ -60,7 +61,7 @@ func main() {
 
 	switch networkingType {
 	case PubSub:
-		comm = pubsub.NewService(lister, miner)
+		comm = pubsub.NewService(lister, miner, pool)
 
 		comm.Connect()
 		defer comm.Disconnect()
@@ -71,9 +72,7 @@ func main() {
 		}
 	}
 
-	w := wallet.NewWallet(crypto.NewSecp256k1Generator())
-	transactionPool := wallet.NewTransactionPool()
-	router := rest.Handler(lister, miner, comm, transactionPool, w)
+	router := rest.Handler(lister, miner, comm, pool, wal)
 
 	var port int
 	if len(os.Args) > 1 && os.Args[1] == "beacon" {

@@ -16,15 +16,15 @@ func (m *MockedTransaction) GetID() string {
 }
 
 // GetInput returns tx input
-func (m *MockedTransaction) GetInput() TxInput {
+func (m *MockedTransaction) GetInput() Input {
 	args := m.Called()
-	return args.Get(0).(TxInput)
+	return args.Get(0).(Input)
 }
 
 // GetOutput returns tx output
-func (m *MockedTransaction) GetOutput() TxOutput {
+func (m *MockedTransaction) GetOutput() Output {
 	args := m.Called()
-	return args.Get(0).(TxOutput)
+	return args.Get(0).(Output)
 }
 
 // Append updates another tx receiver with another amount

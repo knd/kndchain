@@ -7,11 +7,15 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
+	"github.com/knd/kndchain/pkg/wallet"
 )
 
 const (
 	// ChannelPubSub is channel name for publisher to send and subscribers to receive messages
 	ChannelPubSub = "kndchain"
+
+	// ChannelTransactions is channel name for publisher to send and subscribers to receive transactions
+	ChannelTransactions = "kndtransactions"
 
 	// PortPubSub is port on which pubsub server is run
 	PortPubSub = ":6379"
@@ -23,19 +27,22 @@ type Service interface {
 	Disconnect() error
 	SubscribePeers() error
 	BroadcastBlockchain(bc *listing.Blockchain) error
+	BroadcastTransaction(tx wallet.Transaction) error
 }
 
 type service struct {
 	l   listing.Service
 	m   mining.Service
+	p   wallet.TransactionPool
 	psc *redis.PubSubConn
 }
 
 // NewService creates a networking service with necessary dependencies
-func NewService(l listing.Service, m mining.Service) Service {
+func NewService(l listing.Service, m mining.Service, p wallet.TransactionPool) Service {
 	return &service{
 		l: l,
 		m: m,
+		p: p,
 	}
 }
 
@@ -76,9 +83,32 @@ func (s *service) BroadcastBlockchain(bc *listing.Blockchain) error {
 	return err
 }
 
-// SubscribePeers listens to peers for incoming blockchain
+// BroadcastTransaction broadcasts latest transaction to peers
+func (s *service) BroadcastTransaction(tx wallet.Transaction) error {
+	b, err := json.Marshal(tx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn, err := redis.Dial("tcp", PortPubSub)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	_, err = conn.Do("PUBLISH", ChannelTransactions, string(b[:]))
+
+	return err
+}
+
+// SubscribePeers listens to peers for incoming blockchain and transactions
 func (s *service) SubscribePeers() error {
 	err := s.psc.Subscribe(ChannelPubSub)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = s.psc.Subscribe(ChannelTransactions)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,6 +118,7 @@ func (s *service) SubscribePeers() error {
 			switch v := s.psc.Receive().(type) {
 			case redis.Message:
 				if v.Channel == ChannelPubSub {
+					// Received incoming blockchain
 					var bc mining.Blockchain
 					var err error
 					err = json.Unmarshal(v.Data, &bc)
@@ -100,6 +131,10 @@ func (s *service) SubscribePeers() error {
 						continue
 					}
 					log.Printf("Replaced with longer chain. New len: %d", s.l.GetBlockCount())
+				} else if v.Channel == ChannelTransactions {
+					// Received incoming transaction
+					// add transaction to pool
+
 				}
 
 			case redis.Subscription:

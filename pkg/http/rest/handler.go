@@ -1,26 +1,24 @@
 package rest
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/knd/kndchain/pkg/wallet"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
+	"github.com/knd/kndchain/pkg/wallet"
 )
 
 // Handler provides list of routes and action handlers
-func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, w wallet.Wallet) http.Handler {
+func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet) http.Handler {
 	router := httprouter.New()
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
-	router.POST("/api/transactions", addTx(p, w))
+	router.POST("/api/transactions", addTx(p, wal))
 	router.GET("/api/transactions", getTxPool(p))
 
 	return router
@@ -81,36 +79,36 @@ type addTxInput struct {
 	Amount   uint64 `json:"amount"`
 }
 
-type txInput struct {
-	Timestamp int64  `json:"timestamp"`
-	Amount    uint64 `json:"amount"`
-	Address   string `json:"address"`
-	Signature string `json:"sig"`
-}
+// type txInput struct {
+// 	Timestamp int64  `json:"timestamp"`
+// 	Amount    uint64 `json:"amount"`
+// 	Address   string `json:"address"`
+// 	Signature string `json:"sig"`
+// }
 
-type txOutput struct {
-	ID     string            `json:"id"`
-	Output map[string]uint64 `json:"output"`
-	Input  txInput           `json:"input"`
-}
+// type txOutput struct {
+// 	ID     string            `json:"id"`
+// 	Output map[string]uint64 `json:"output"`
+// 	Input  txInput           `json:"input"`
+// }
 
-func addTx(p wallet.TransactionPool, sw wallet.Wallet) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func addTx(p wallet.TransactionPool, wal wallet.Wallet) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
 
-		var txInput addTxInput
-		err := decoder.Decode(&txInput)
-		if err != nil || len(txInput.Receiver) == 0 || txInput.Amount <= 0 {
-			http.Error(w, fmt.Sprintf("Invalid input err=%s, receiver=%s, amount=%d", err, txInput.Receiver, txInput.Amount), http.StatusBadRequest)
+		var ati addTxInput
+		err := decoder.Decode(&ati)
+		if err != nil || len(ati.Receiver) == 0 || ati.Amount <= 0 {
+			http.Error(w, fmt.Sprintf("Invalid input err=%s, receiver=%s, amount=%d", err, ati.Receiver, ati.Amount), http.StatusBadRequest)
 			return
 		}
 
 		var tx wallet.Transaction
-		if p.Exists(sw.PubKeyHex()) {
-			tx = p.GetTransaction(sw.PubKeyHex())
-			err = tx.Append(sw, txInput.Receiver, txInput.Amount)
+		if p.Exists(wal.PubKeyHex()) {
+			tx = p.GetTransaction(wal.PubKeyHex())
+			err = tx.Append(wal, ati.Receiver, ati.Amount)
 		} else {
-			tx, err = sw.CreateTransaction(txInput.Receiver, txInput.Amount)
+			tx, err = wal.CreateTransaction(ati.Receiver, ati.Amount)
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -118,20 +116,17 @@ func addTx(p wallet.TransactionPool, sw wallet.Wallet) func(w http.ResponseWrite
 		}
 		p.Add(tx)
 
-		o := toTxOuptut(tx)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(o)
+		json.NewEncoder(w).Encode(tx)
 	}
 }
 
-type txPoolOutput map[string]txOutput
-
 func getTxPool(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		output := txPoolOutput{}
+		output := make(map[string]wallet.Transaction)
 
 		for _, tx := range p.All() {
-			output[tx.GetID()] = toTxOuptut(tx)
+			output[tx.GetID()] = tx
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -139,15 +134,15 @@ func getTxPool(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func toTxOuptut(tx wallet.Transaction) txOutput {
-	o := txOutput{}
-	o.ID = tx.GetID()
-	o.Output = tx.GetOutput()
-	i := tx.GetInput()
-	o.Input.Timestamp = i.Timestamp
-	o.Input.Amount = i.Amount
-	o.Input.Address = i.Address
-	o.Input.Signature = hex.EncodeToString(i.Signature)
+// func toTxOuptut(tx wallet.Transaction) txOutput {
+// 	o := txOutput{}
+// 	o.ID = tx.GetID()
+// 	o.Output = tx.GetOutput()
+// 	i := tx.GetInput()
+// 	o.Input.Timestamp = i.Timestamp
+// 	o.Input.Amount = i.Amount
+// 	o.Input.Address = i.Address
+// 	o.Input.Signature = hex.EncodeToString(i.Signature)
 
-	return o
-}
+// 	return o
+// }

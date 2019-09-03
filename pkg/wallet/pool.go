@@ -1,5 +1,9 @@
 package wallet
 
+import (
+	"errors"
+)
+
 // TransactionPool provides access to tx pool operations
 type TransactionPool interface {
 	All() map[string]Transaction
@@ -33,7 +37,12 @@ func (p *transactionPool) Get(id string) Transaction {
 }
 
 func (p *transactionPool) Add(tx Transaction) error {
+	if tx == nil {
+		return errors.New("Can't add nil transaction to pool")
+	}
+
 	p.transactions[tx.GetID()] = tx
+
 	return nil
 }
 

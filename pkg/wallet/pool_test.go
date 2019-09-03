@@ -41,7 +41,7 @@ func TestTransactionPool(t *testing.T) {
 		// test verification
 		assert.True(transactionPool.Exists(walletB.PubKeyHex()))
 
-		tx := transactionPool.GetTransaction(walletB.PubKeyHex())
-		assert.Equal(txB, tx)
+		receivedTx := transactionPool.GetTransaction(walletB.PubKeyHex())
+		assert.Equal(txB, receivedTx)
 	})
 }
