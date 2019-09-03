@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/knd/kndchain/pkg/crypto"
-
 	"github.com/knd/kndchain/pkg/wallet"
 
 	"github.com/julienschmidt/httprouter"
@@ -17,12 +15,12 @@ import (
 )
 
 // Handler provides list of routes and action handlers
-func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool) http.Handler {
+func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, w wallet.Wallet) http.Handler {
 	router := httprouter.New()
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
-	router.POST("/api/transactions", addTx(p))
+	router.POST("/api/transactions", addTx(p, w))
 
 	return router
 }
@@ -95,7 +93,7 @@ type addTxOutput struct {
 	Input  txInput           `json:"input"`
 }
 
-func addTx(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func addTx(p wallet.TransactionPool, sw wallet.Wallet) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -106,9 +104,13 @@ func addTx(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		// TODO: Replace wallet
-		wallet := wallet.NewWallet(crypto.NewSecp256k1Generator())
-		tx, err := wallet.CreateTransaction(txInput.Receiver, txInput.Amount)
+		var tx wallet.Transaction
+		if p.Exists(sw.PubKeyHex()) {
+			tx = p.GetTransaction(sw.PubKeyHex())
+			err = tx.Append(sw, txInput.Receiver, txInput.Amount)
+		} else {
+			tx, err = sw.CreateTransaction(txInput.Receiver, txInput.Amount)
+		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/knd/kndchain/pkg/crypto"
+
 	"github.com/knd/kndchain/pkg/wallet"
 
 	"github.com/knd/kndchain/pkg/http/rest"
@@ -68,8 +70,10 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	w := wallet.NewWallet(crypto.NewSecp256k1Generator())
 	transactionPool := wallet.NewTransactionPool()
-	router := rest.Handler(lister, miner, comm, transactionPool)
+	router := rest.Handler(lister, miner, comm, transactionPool, w)
 
 	var port int
 	if len(os.Args) > 1 && os.Args[1] == "beacon" {

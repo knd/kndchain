@@ -29,4 +29,19 @@ func TestTransactionPool(t *testing.T) {
 		// test verification
 		assert.Equal(txA, transactionPool.Get(txA.GetID()))
 	})
+
+	t.Run("exists transaction", func(t *testing.T) {
+		beforeEach()
+
+		txB := NewTransaction(walletB, walletB.PubKeyHex(), 1)
+
+		// perform test
+		transactionPool.Add(txB)
+
+		// test verification
+		assert.True(transactionPool.Exists(walletB.PubKeyHex()))
+
+		tx := transactionPool.GetTransaction(walletB.PubKeyHex())
+		assert.Equal(txB, tx)
+	})
 }
