@@ -11,6 +11,7 @@ type TransactionPool interface {
 	GetTransaction(inputAddress string) Transaction
 	Add(tx Transaction) error
 	Exists(inputAddress string) bool
+	SetPool(newPool map[string]Transaction) error
 }
 
 type transactionPool struct {
@@ -63,5 +64,10 @@ func (p *transactionPool) GetTransaction(inputAddress string) Transaction {
 		}
 	}
 
+	return nil
+}
+
+func (p *transactionPool) SetPool(newPool map[string]Transaction) error {
+	p.transactions = newPool
 	return nil
 }

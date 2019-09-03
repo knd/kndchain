@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/knd/kndchain/pkg/crypto"
-	"github.com/knd/kndchain/pkg/wallet"
-
 	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
@@ -18,6 +16,7 @@ import (
 	"github.com/knd/kndchain/pkg/storage/memory"
 	"github.com/knd/kndchain/pkg/syncing"
 	"github.com/knd/kndchain/pkg/validating"
+	"github.com/knd/kndchain/pkg/wallet"
 )
 
 // Type indicates type of constants
@@ -90,12 +89,19 @@ func main() {
 		port = 3000 + portShuffle
 
 		log.Printf("Syncing blockchain. Current chain len: %d", lister.GetBlockCount())
-		syncer := syncing.NewService(miner)
+		syncer := syncing.NewService(miner, pool)
 		err := syncer.SyncBlockchain(fmt.Sprintf("http://localhost:%d/api/blocks", BeaconNodePort))
 		if err != nil {
 			log.Println(err)
 		}
-		log.Printf("Syncing done. Synced chain len: %d", lister.GetBlockCount())
+		log.Printf("Blockchain synced. Synced chain len: %d", lister.GetBlockCount())
+
+		log.Println("Syncing transaction pool...")
+		err = syncer.SyncTransactionPool(fmt.Sprintf("http://localhost:%d/api/transactions", BeaconNodePort))
+		if err != nil {
+			log.Println(err)
+		}
+		log.Printf("Transaction pool synced")
 	}
 
 	fmt.Printf("Serving now on http://localhost:%d\n", port)
