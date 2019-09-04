@@ -18,7 +18,7 @@ func TestService_IsInvalidChainWhenGenesisBlockIsInvalid(t *testing.T) {
 				Timestamp:  time.Now(),
 				LastHash:   &lastHash,
 				Hash:       &hash,
-				Data:       []string{"has initial tx which is not supposed to be"},
+				Data:       []Transaction{Transaction{}},
 				Nonce:      1,
 				Difficulty: 1,
 			},
@@ -41,7 +41,7 @@ func TestService_IsInvalidChainWhenLastHashIsTampered(t *testing.T) {
 				Timestamp:  genesisTimestamp,
 				LastHash:   &lastHash,
 				Hash:       &hash,
-				Data:       []string{},
+				Data:       []Transaction{},
 				Nonce:      0,
 				Difficulty: 1,
 			},
@@ -49,7 +49,7 @@ func TestService_IsInvalidChainWhenLastHashIsTampered(t *testing.T) {
 				Timestamp:  time.Now(),
 				LastHash:   &tamperedLashHash,
 				Hash:       &hash,
-				Data:       []string{},
+				Data:       []Transaction{},
 				Nonce:      1,
 				Difficulty: 1,
 			},
@@ -73,29 +73,31 @@ func TestService_IsInvalidChainWhenTimestampIsNotInOrder(t *testing.T) {
 		Timestamp:  genesisTimestamp,
 		LastHash:   &genesisLastHash,
 		Hash:       &genesisHash,
-		Data:       []string{},
+		Data:       []Transaction{},
 		Nonce:      0,
 		Difficulty: 1,
 	}
 
+	txA := Transaction{ID: "txA"}
 	blockA := Block{
 		Timestamp:  timestamp2,
 		LastHash:   &genesisHash,
-		Data:       []string{"txA"},
+		Data:       []Transaction{txA},
 		Nonce:      1,
 		Difficulty: 1,
 	}
-	blockAHash := hashing.SHA256Hash(timestamp2, genesisHash, []string{"txA"}, blockA.Nonce, blockA.Difficulty)
+	blockAHash := hashing.SHA256Hash(timestamp2, genesisHash, []Transaction{txA}, blockA.Nonce, blockA.Difficulty)
 	blockA.Hash = &blockAHash
 
+	txB := Transaction{ID: "txB"}
 	blockB := Block{
 		Timestamp:  timestamp1,
 		LastHash:   &blockAHash,
-		Data:       []string{"txB"},
+		Data:       []Transaction{txB},
 		Nonce:      2,
 		Difficulty: 1,
 	}
-	blockBHash := hashing.SHA256Hash(timestamp1, blockAHash, []string{"txB"}, blockB.Nonce, blockB.Difficulty)
+	blockBHash := hashing.SHA256Hash(timestamp1, blockAHash, []Transaction{txB}, blockB.Nonce, blockB.Difficulty)
 	blockB.Hash = &blockBHash
 
 	blockchain := &Blockchain{Chain: []Block{genesisBlock, blockA, blockB}}
@@ -117,25 +119,27 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 		Timestamp:  genesisTimestamp,
 		LastHash:   &genesisLastHash,
 		Hash:       &genesisHash,
-		Data:       []string{},
+		Data:       []Transaction{},
 		Nonce:      0,
 		Difficulty: 1,
 	}
 
+	txA := Transaction{ID: "txA"}
 	blockA := Block{
 		Timestamp:  timestamp1,
 		LastHash:   &genesisHash,
-		Data:       []string{"txA"},
+		Data:       []Transaction{txA},
 		Nonce:      1,
 		Difficulty: 1,
 	}
 	blockAHash := hashing.SHA256Hash(timestamp1.Unix(), genesisHash, blockA.Data, blockA.Nonce, blockA.Difficulty)
 	blockA.Hash = &blockAHash
 
+	txB := Transaction{ID: "txB"}
 	blockB := Block{
 		Timestamp:  timestamp2,
 		LastHash:   &blockAHash,
-		Data:       []string{"txB"},
+		Data:       []Transaction{txB},
 		Nonce:      2,
 		Difficulty: 1,
 	}
@@ -161,25 +165,27 @@ func TestService_IsInvalidChainWhenLastBlockJumpsDifficulty(t *testing.T) {
 		Timestamp:  genesisTimestamp,
 		LastHash:   &genesisLastHash,
 		Hash:       &genesisHash,
-		Data:       []string{},
+		Data:       []Transaction{},
 		Nonce:      0,
 		Difficulty: 5,
 	}
 
+	txA := Transaction{ID: "txA"}
 	blockA := Block{
 		Timestamp:  timestamp1,
 		LastHash:   &genesisHash,
-		Data:       []string{"txA"},
+		Data:       []Transaction{txA},
 		Nonce:      1,
 		Difficulty: 4,
 	}
 	blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data, blockA.Nonce, blockA.Difficulty)
 	blockA.Hash = &blockAHash
 
+	txB := Transaction{ID: "txB"}
 	blockB := Block{
 		Timestamp:  timestamp2,
 		LastHash:   &blockAHash,
-		Data:       []string{"txB"},
+		Data:       []Transaction{txB},
 		Nonce:      2,
 		Difficulty: 2,
 	}

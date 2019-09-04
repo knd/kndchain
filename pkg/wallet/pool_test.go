@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/knd/kndchain/pkg/listing"
+
 	"github.com/knd/kndchain/pkg/hashing"
 
 	"github.com/knd/kndchain/pkg/crypto"
@@ -19,9 +21,10 @@ func TestTransactionPool(t *testing.T) {
 	walletB := NewWallet(secp256k1)
 	walletC := NewWallet(secp256k1)
 	var validTransactions []Transaction
+	mockedListing := new(MockedListing)
 
 	beforeEach := func() {
-		transactionPool = NewTransactionPool()
+		transactionPool = NewTransactionPool(mockedListing)
 		txA = NewTransaction(walletA, walletB.PubKeyHex(), 100)
 		txB = NewTransaction(walletB, walletC.PubKeyHex(), 1)
 		txC = NewTransaction(walletC, walletA.PubKeyHex(), 99)
@@ -75,6 +78,31 @@ func TestTransactionPool(t *testing.T) {
 		validTransactions = transactionPool.ValidTransactions()
 
 		// test verification
-		assert.Equal([]Transaction{txA, txB}, validTransactions)
+		assert.Contains(validTransactions, txA)
+		assert.Contains(validTransactions, txB)
+	})
+
+	t.Run("clears transaction pool", func(t *testing.T) {
+		beforeEach()
+		transactionPool.Add(txA)
+		transactionPool.Add(txB)
+
+		// perform test
+		transactionPool.Clear()
+
+		// test verification
+		assert.Empty(transactionPool.All())
+	})
+
+	t.Run("clears blockchain transaction", func(t *testing.T) {
+		beforeEach()
+
+		bc := &listing.Blockchain{Chain: []listing.Block{
+			listing.Block{
+				Data: []string{"dfd"},
+			},
+		}}
+		mockedListing.On("GetBlockchain").Return(bc)
+
 	})
 }

@@ -43,7 +43,7 @@ var ErrShorterChain = errors.New("Current chain is the longest, Incoming chain i
 
 // Service provides block creating operations
 type Service interface {
-	MineNewBlock(lastBlock *Block, data []string) (*Block, error)
+	MineNewBlock(lastBlock *Block, data []Transaction) (*Block, error)
 	AddBlock(minedBlock *Block) error
 	ReplaceChain(newChain *Blockchain) error
 }
@@ -63,21 +63,7 @@ type service struct {
 
 // NewService creates a creating service with necessary dependencies
 func NewService(r Repository, l listing.Service, v validating.Service, c *GenesisConfig) Service {
-	newS := &service{r, l, v}
-
-	// Do not have genesis block
-	// if l.GetBlockCount() == 0 {
-	// 	var genesisBlock *Block
-	// 	var err error
-	// 	if genesisBlock, err = CreateGenesisBlock(c); err != nil {
-	// 		log.Fatal("Cannot create genesis block")
-	// 	}
-	// 	if err = newS.AddBlock(genesisBlock); err != nil {
-	// 		log.Fatal("cannot add genesis block to blockchain")
-	// 	}
-	// }
-
-	return newS
+	return &service{r, l, v}
 }
 
 // CreateGenesisBlock returns the genesis block created from config
@@ -111,7 +97,7 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 		blockNonce = genesisConfig.Nonce
 	}
 
-	data := []string{}
+	data := []Transaction{}
 	if genesisConfig != nil && genesisConfig.Data != nil {
 		data = *genesisConfig.Data
 	}
@@ -134,7 +120,7 @@ func AdjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
 }
 
 // MineNewBlock returns a new block
-func (s *service) MineNewBlock(lastBlock *Block, data []string) (*Block, error) {
+func (s *service) MineNewBlock(lastBlock *Block, data []Transaction) (*Block, error) {
 	// validations
 	if lastBlock == nil {
 		return nil, ErrMissingLastBlock
@@ -176,7 +162,7 @@ func (s *service) AddBlock(minedBlock *Block) error {
 	return s.blockchain.AddBlock(minedBlock)
 }
 
-func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []string, nonce uint32, difficulty uint32) *Block {
+func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []Transaction, nonce uint32, difficulty uint32) *Block {
 	return &Block{
 		Timestamp:  timestamp,
 		LastHash:   lastHash,
@@ -209,11 +195,28 @@ func toValidatingChain(newChain *Blockchain) *validating.Blockchain {
 			Timestamp:  block.Timestamp,
 			LastHash:   block.LastHash,
 			Hash:       block.Hash,
-			Data:       block.Data,
+			Data:       toValidatingTransactions(block.Data),
 			Nonce:      block.Nonce,
 			Difficulty: block.Difficulty,
 		}
 		vBlockchain.Chain = append(vBlockchain.Chain, *vBlock)
 	}
 	return vBlockchain
+}
+
+func toValidatingTransactions(data []Transaction) []validating.Transaction {
+	var vTxs []validating.Transaction
+	for _, transaction := range data {
+		vTxs = append(vTxs, validating.Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: validating.Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return vTxs
 }

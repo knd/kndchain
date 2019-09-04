@@ -2,6 +2,8 @@ package wallet
 
 import (
 	"errors"
+
+	"github.com/knd/kndchain/pkg/listing"
 )
 
 // TransactionPool provides access to tx pool operations
@@ -13,16 +15,20 @@ type TransactionPool interface {
 	Exists(inputAddress string) bool
 	SetPool(newPool map[string]Transaction) error
 	ValidTransactions() []Transaction
+	Clear() error
+	ClearBlockTransactions() error
 }
 
 type transactionPool struct {
 	transactions map[string]Transaction
+	lister       listing.Service
 }
 
 // NewTransactionPool creates an new transaction pool
-func NewTransactionPool() TransactionPool {
+func NewTransactionPool(l listing.Service) TransactionPool {
 	return &transactionPool{
 		transactions: make(map[string]Transaction),
+		lister:       l,
 	}
 }
 
@@ -82,4 +88,14 @@ func (p *transactionPool) ValidTransactions() []Transaction {
 		}
 	}
 	return validTxs
+}
+
+func (p *transactionPool) Clear() error {
+	p.transactions = make(map[string]Transaction)
+	return nil
+}
+
+func (p *transactionPool) ClearBlockTransactions() error {
+	// TODO: Implement this
+	return nil
 }

@@ -1,4 +1,4 @@
-	package mining
+package wallet
 
 import (
 	"github.com/knd/kndchain/pkg/listing"
