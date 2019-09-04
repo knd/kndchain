@@ -91,19 +91,6 @@ type addTxInput struct {
 	Amount   uint64 `json:"amount"`
 }
 
-// type txInput struct {
-// 	Timestamp int64  `json:"timestamp"`
-// 	Amount    uint64 `json:"amount"`
-// 	Address   string `json:"address"`
-// 	Signature string `json:"sig"`
-// }
-
-// type txOutput struct {
-// 	ID     string            `json:"id"`
-// 	Output map[string]uint64 `json:"output"`
-// 	Input  txInput           `json:"input"`
-// }
-
 func addTx(p wallet.TransactionPool, wal wallet.Wallet, c pubsub.Service) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
@@ -146,16 +133,3 @@ func getTxPool(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Req
 		json.NewEncoder(w).Encode(output)
 	}
 }
-
-// func toTxOuptut(tx wallet.Transaction) txOutput {
-// 	o := txOutput{}
-// 	o.ID = tx.GetID()
-// 	o.Output = tx.GetOutput()
-// 	i := tx.GetInput()
-// 	o.Input.Timestamp = i.Timestamp
-// 	o.Input.Amount = i.Amount
-// 	o.Input.Address = i.Address
-// 	o.Input.Signature = hex.EncodeToString(i.Signature)
-
-// 	return o
-// }
