@@ -214,3 +214,29 @@ func TestTransaction_Append(t *testing.T) {
 		assert.Equal(int(30), int(tx.GetOutput()[receiverBWallet.PubKeyHex()]))
 	})
 }
+
+func TestCreateRewardTransaction(t *testing.T) {
+	assert := assert.New(t)
+	secp256k1 := crypto.NewSecp256k1Generator()
+	var minerWallet Wallet
+	var rewardTransaction Transaction
+
+	beforeEach := func() {
+		minerWallet = NewWallet(secp256k1)
+		rewardTransaction, _ = CreateRewardTransaction(minerWallet)
+	}
+
+	t.Run("creates tx with reward input", func(t *testing.T) {
+		beforeEach()
+
+		// perform test & verification
+		assert.Equal(GetRewardTransactionInput(), rewardTransaction.GetInput())
+	})
+
+	t.Run("creates tx with outmap containing mining reward", func(t *testing.T) {
+		beforeEach()
+
+		// perform test & verification
+		assert.Equal(MiningReward, rewardTransaction.GetOutput()[minerWallet.PubKeyHex()])
+	})
+}
