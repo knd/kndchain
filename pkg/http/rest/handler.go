@@ -31,17 +31,12 @@ func getBlocks(l listing.Service) func(w http.ResponseWriter, r *http.Request, _
 	}
 }
 
-// MineBlockInput encapsulates data/txs in new block
-type MineBlockInput struct {
-	Data []string `json:"data"`
-}
-
 func mineBlock(m mining.Service, l listing.Service, c pubsub.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
 
-		var mineBlockInput MineBlockInput
-		err := decoder.Decode(&mineBlockInput)
+		var transaction mining.Transaction
+		err := decoder.Decode(&transaction)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -52,11 +47,11 @@ func mineBlock(m mining.Service, l listing.Service, c pubsub.Service) func(w htt
 			Timestamp:  lb.Timestamp,
 			LastHash:   lb.LastHash,
 			Hash:       lb.Hash,
-			Data:       lb.Data,
+			Data:       toMiningTransactions(lb.Data),
 			Nonce:      lb.Nonce,
 			Difficulty: lb.Difficulty,
 		}
-		newBlock, err := m.MineNewBlock(mb, mineBlockInput.Data)
+		newBlock, err := m.MineNewBlock(mb, []mining.Transaction{transaction})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -72,6 +67,23 @@ func mineBlock(m mining.Service, l listing.Service, c pubsub.Service) func(w htt
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(l.GetLastBlock())
 	}
+}
+
+func toMiningTransactions(data []listing.Transaction) []mining.Transaction {
+	var mTxs []mining.Transaction
+	for _, transaction := range data {
+		mTxs = append(mTxs, mining.Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: mining.Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return mTxs
 }
 
 type addTxInput struct {

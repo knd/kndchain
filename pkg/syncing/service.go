@@ -48,7 +48,7 @@ func (s *service) SyncBlockchain(nodeURL string) error {
 			Timestamp:  b.Timestamp,
 			LastHash:   b.LastHash,
 			Hash:       b.Hash,
-			Data:       b.Data,
+			Data:       toMiningTransactions(b.Data),
 			Nonce:      b.Nonce,
 			Difficulty: b.Difficulty,
 		})
@@ -56,6 +56,23 @@ func (s *service) SyncBlockchain(nodeURL string) error {
 	mbc := &mining.Blockchain{Chain: blocks}
 
 	return s.m.ReplaceChain(mbc)
+}
+
+func toMiningTransactions(data []Transaction) []mining.Transaction {
+	var mTxs []mining.Transaction
+	for _, transaction := range data {
+		mTxs = append(mTxs, mining.Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: mining.Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return mTxs
 }
 
 // SyncTransactionPool obtains the full transaction pool from nodeEndpoint url

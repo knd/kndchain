@@ -99,7 +99,7 @@ func TestTransactionPool(t *testing.T) {
 
 		bc := &listing.Blockchain{Chain: []listing.Block{
 			listing.Block{
-				Data: []string{"dfd"},
+				// Data: []string{"dfd"},
 			},
 		}}
 		mockedListing.On("GetBlockchain").Return(bc)

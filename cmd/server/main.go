@@ -46,8 +46,6 @@ func main() {
 	var lister listing.Service
 	var validator validating.Service
 	var comm pubsub.Service
-	wal := wallet.NewWallet(crypto.NewSecp256k1Generator())
-	pool := wallet.NewTransactionPool()
 
 	switch storageType {
 	case Memory:
@@ -57,6 +55,9 @@ func main() {
 		lister = listing.NewService(r)
 		miner = mining.NewService(r, lister, validator, nil)
 	}
+
+	wal := wallet.NewWallet(crypto.NewSecp256k1Generator())
+	pool := wallet.NewTransactionPool(lister)
 
 	switch networkingType {
 	case PubSub:
