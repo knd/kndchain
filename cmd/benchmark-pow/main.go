@@ -21,6 +21,23 @@ const (
 	Memory
 )
 
+func toMiningTransactions(data []listing.Transaction) []mining.Transaction {
+	var mTxs []mining.Transaction
+	for _, transaction := range data {
+		mTxs = append(mTxs, mining.Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: mining.Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return mTxs
+}
+
 func main() {
 	// set up storage
 	storageType := Memory
@@ -51,12 +68,12 @@ func main() {
 			Timestamp:  lastBlock.Timestamp,
 			LastHash:   lastBlock.LastHash,
 			Hash:       lastBlock.Hash,
-			Data:       lastBlock.Data,
+			Data:       toMiningTransactions(lastBlock.Data),
 			Nonce:      lastBlock.Nonce,
 			Difficulty: lastBlock.Difficulty,
 		}
 
-		newB, _ := miner.MineNewBlock(mb, []string{"dummy-tx"})
+		newB, _ := miner.MineNewBlock(mb, []mining.Transaction{mining.Transaction{ID: "dummy-tx"}})
 
 		miner.AddBlock(newB)
 
