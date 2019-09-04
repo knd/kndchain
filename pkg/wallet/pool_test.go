@@ -96,13 +96,45 @@ func TestTransactionPool(t *testing.T) {
 
 	t.Run("clears blockchain transaction", func(t *testing.T) {
 		beforeEach()
-
-		bc := &listing.Blockchain{Chain: []listing.Block{
-			listing.Block{
-				// Data: []string{"dfd"},
+		block1 := listing.Block{
+			Data: []listing.Transaction{
+				listing.Transaction{
+					ID: txA.GetID(),
+					Input: listing.Input{
+						Timestamp: txA.GetInput().Timestamp,
+						Amount:    txA.GetInput().Amount,
+						Address:   txA.GetInput().Address,
+						Signature: txA.GetInput().Signature,
+					},
+					Output: txA.GetOutput(),
+				},
 			},
-		}}
-		mockedListing.On("GetBlockchain").Return(bc)
+		}
+		block2 := listing.Block{
+			Data: []listing.Transaction{
+				listing.Transaction{
+					ID: txC.GetID(),
+					Input: listing.Input{
+						Timestamp: txC.GetInput().Timestamp,
+						Amount:    txC.GetInput().Amount,
+						Address:   txC.GetInput().Address,
+						Signature: txC.GetInput().Signature,
+					},
+					Output: txC.GetOutput(),
+				},
+			},
+		}
 
+		bc := &listing.Blockchain{Chain: []listing.Block{block1, block2}}
+		mockedListing.On("GetBlockchain").Return(bc)
+		transactionPool.Add(txA)
+		transactionPool.Add(txB)
+		transactionPool.Add(txC)
+
+		// perform test
+		transactionPool.ClearBlockTransactions()
+
+		// test verification
+		assert.Contains(transactionPool.All(), txB.GetID())
 	})
 }

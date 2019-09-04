@@ -96,6 +96,13 @@ func (p *transactionPool) Clear() error {
 }
 
 func (p *transactionPool) ClearBlockTransactions() error {
-	// TODO: Implement this
+	for _, block := range p.lister.GetBlockchain().Chain {
+		for _, transaction := range block.Data {
+			if _, ok := p.transactions[transaction.ID]; ok {
+				delete(p.transactions, transaction.ID)
+			}
+		}
+	}
+
 	return nil
 }
