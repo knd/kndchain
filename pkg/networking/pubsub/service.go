@@ -128,11 +128,19 @@ func (s *service) SubscribePeers() error {
 						log.Println("Coudn't unmarshall incoming blockchain")
 						continue
 					}
+
 					err = s.m.ReplaceChain(&bc)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
+
+					err = s.p.ClearBlockTransactions()
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+
 					log.Printf("Replaced with longer chain. New len: %d", s.l.GetBlockCount())
 				} else if v.Channel == ChannelTransactions {
 					// Received incoming transaction
