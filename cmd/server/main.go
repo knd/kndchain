@@ -11,6 +11,7 @@ import (
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
+	"github.com/knd/kndchain/pkg/miner"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
 	"github.com/knd/kndchain/pkg/storage/memory"
@@ -31,7 +32,7 @@ const (
 )
 
 const (
-	// PubSub will communicate with peers via Redis pubsub
+	// PubSub will p2pCommunicate with peers via Redis pubsub
 	PubSub Type = iota
 )
 
@@ -42,37 +43,38 @@ func main() {
 	storageType := Memory    // hard-coded
 	networkingType := PubSub // hard-coded
 
-	var miner mining.Service
-	var lister listing.Service
-	var validator validating.Service
-	var comm pubsub.Service
+	var miningService mining.Service
+	var listingService listing.Service
+	var validatingService validating.Service
+	var p2pComm pubsub.Service
 
 	switch storageType {
 	case Memory:
 		r := memory.NewRepository()
 
-		validator = validating.NewService()
-		lister = listing.NewService(r)
-		miner = mining.NewService(r, lister, validator, nil)
+		validatingService = validating.NewService()
+		listingService = listing.NewService(r)
+		miningService = mining.NewService(r, listingService, validatingService, nil)
 	}
 
-	wal := wallet.NewWallet(crypto.NewSecp256k1Generator())
-	pool := wallet.NewTransactionPool(lister)
+	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator())
+	transactionPool := wallet.NewTransactionPool(listingService)
 
 	switch networkingType {
 	case PubSub:
-		comm = pubsub.NewService(lister, miner, pool)
+		p2pComm = pubsub.NewService(listingService, miningService, transactionPool)
 
-		comm.Connect()
-		defer comm.Disconnect()
+		p2pComm.Connect()
+		defer p2pComm.Disconnect()
 
-		err := comm.SubscribePeers()
+		err := p2pComm.SubscribePeers()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	router := rest.Handler(lister, miner, comm, pool, wal)
+	miner := miner.NewMiner(miningService, listingService, transactionPool, minerWallet, p2pComm)
+	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner)
 
 	var port int
 	if len(os.Args) > 1 && os.Args[1] == "beacon" {
@@ -80,8 +82,8 @@ func main() {
 
 		// Add genesis block then broadcast to peers
 		genesisBlock, _ := mining.CreateGenesisBlock(nil)
-		miner.AddBlock(genesisBlock)
-		comm.BroadcastBlockchain(lister.GetBlockchain())
+		miningService.AddBlock(genesisBlock)
+		p2pComm.BroadcastBlockchain(listingService.GetBlockchain())
 
 	} else {
 		// Generate port from 3000 - 4000
@@ -89,20 +91,20 @@ func main() {
 		portShuffle := rand.Intn(1000)
 		port = 3000 + portShuffle
 
-		log.Printf("Syncing blockchain. Current chain len: %d", lister.GetBlockCount())
-		syncer := syncing.NewService(miner, pool)
+		log.Printf("Syncing blockchain. Current chain len: %d", listingService.GetBlockCount())
+		syncer := syncing.NewService(miningService, transactionPool)
 		err := syncer.SyncBlockchain(fmt.Sprintf("http://localhost:%d/api/blocks", BeaconNodePort))
 		if err != nil {
 			log.Println(err)
 		}
-		log.Printf("Blockchain synced. Synced chain len: %d", lister.GetBlockCount())
+		log.Printf("Blockchain synced. Synced chain len: %d", listingService.GetBlockCount())
 
-		log.Println("Syncing transaction pool...")
+		log.Println("Syncing transaction transactionPool...")
 		err = syncer.SyncTransactionPool(fmt.Sprintf("http://localhost:%d/api/transactions", BeaconNodePort))
 		if err != nil {
 			log.Println(err)
 		}
-		log.Printf("Transaction pool synced")
+		log.Printf("Transaction transactionPool synced")
 	}
 
 	fmt.Printf("Serving now on http://localhost:%d\n", port)

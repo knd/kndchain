@@ -3,23 +3,26 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/knd/kndchain/pkg/listing"
+	"github.com/knd/kndchain/pkg/miner"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
 	"github.com/knd/kndchain/pkg/wallet"
 )
 
 // Handler provides list of routes and action handlers
-func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet) http.Handler {
+func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet, miner miner.Miner) http.Handler {
 	router := httprouter.New()
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
 	router.POST("/api/transactions", addTx(p, wal, c))
 	router.GET("/api/transactions", getTxPool(p))
+	router.GET("/api/mine-transactions", mineTransactions(miner, l)) // for testing
 
 	return router
 }
@@ -131,5 +134,17 @@ func getTxPool(p wallet.TransactionPool) func(w http.ResponseWriter, r *http.Req
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(output)
+	}
+}
+
+func mineTransactions(miner miner.Miner, lister listing.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		err := miner.Mine()
+		if err != nil {
+			log.Fatal("Failed to mine")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(lister.GetLastBlock())
 	}
 }

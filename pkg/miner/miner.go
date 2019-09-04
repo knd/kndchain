@@ -1,4 +1,4 @@
-package mining
+package miner
 
 import (
 	"log"
