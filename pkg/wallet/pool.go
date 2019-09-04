@@ -12,6 +12,7 @@ type TransactionPool interface {
 	Add(tx Transaction) error
 	Exists(inputAddress string) bool
 	SetPool(newPool map[string]Transaction) error
+	ValidTransactions() []Transaction
 }
 
 type transactionPool struct {
@@ -70,4 +71,15 @@ func (p *transactionPool) GetTransaction(inputAddress string) Transaction {
 func (p *transactionPool) SetPool(newPool map[string]Transaction) error {
 	p.transactions = newPool
 	return nil
+}
+
+func (p *transactionPool) ValidTransactions() []Transaction {
+	var validTxs []Transaction
+	for _, tx := range p.transactions {
+		valid, err := IsValidTransaction(tx)
+		if valid && err == nil {
+			validTxs = append(validTxs, tx)
+		}
+	}
+	return validTxs
 }
