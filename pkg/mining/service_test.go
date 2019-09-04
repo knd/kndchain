@@ -33,7 +33,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 	})
 
 	t.Run("creates genesis block with given config", func(t *testing.T) {
-		jsonData := `{ "lastHash": "0x123", "hash": "0x456", "data": ["tx1", "tx2"] }`
+		jsonData := `{ "lastHash": "0x123", "hash": "0x456", "data": [{ "id": "tx1" }, { "id": "tx2" }] }`
 
 		var genesisConfig GenesisConfig
 		if err := json.Unmarshal([]byte(jsonData), &genesisConfig); err != nil {
@@ -48,7 +48,7 @@ func TestCreateGenesisBlock(t *testing.T) {
 		assert.NotEmpty(genesisBlock.Timestamp)
 		assert.Equal("0x123", *genesisBlock.LastHash)
 		assert.Equal("0x456", *genesisBlock.Hash)
-		assert.Equal([]string{"tx1", "tx2"}, genesisBlock.Data)
+		assert.Equal([]Transaction{Transaction{ID: "tx1"}, Transaction{ID: "tx2"}}, genesisBlock.Data)
 	})
 }
 
@@ -59,7 +59,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		Timestamp:  time.Now(),
 		LastHash:   &lastHash,
 		Hash:       &hash,
-		Data:       []string{"tx1"},
+		Data:       []Transaction{Transaction{ID: "txA"}},
 		Nonce:      1,
 		Difficulty: 2,
 	}
@@ -136,11 +136,11 @@ func TestService(t *testing.T) {
 			Timestamp:  time.Now(),
 			LastHash:   &lastHash,
 			Hash:       &hash,
-			Data:       []string{"tx1"},
+			Data:       []Transaction{Transaction{ID: "tx1"}},
 			Nonce:      nonce,
 			Difficulty: difficulty,
 		}
-		data := []string{"tx2"}
+		data := []Transaction{Transaction{ID: "tx2"}}
 
 		// perform test
 		newBlock, err := miningService.MineNewBlock(&lastBlock, data)
@@ -163,7 +163,7 @@ func TestService(t *testing.T) {
 			Timestamp: time.Now(),
 			LastHash:  &LastHash,
 			Hash:      &Hash,
-			Data:      []string{"tx1"},
+			Data:      []Transaction{Transaction{ID: "tx1"}},
 		}
 		mockedRepository.On("AddBlock", minedBlock).Return(nil)
 
@@ -199,13 +199,13 @@ func TestService(t *testing.T) {
 			Timestamp: genesisTimestamp,
 			LastHash:  &genesisLastHash,
 			Hash:      &genesisHash,
-			Data:      []string{},
+			Data:      []Transaction{},
 		}
 
 		blockA := Block{
 			Timestamp: timestamp1,
 			LastHash:  &genesisHash,
-			Data:      []string{"txA"},
+			Data:      []Transaction{Transaction{ID: "txA"}},
 		}
 		blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data)
 		blockA.Hash = &blockAHash
@@ -213,7 +213,7 @@ func TestService(t *testing.T) {
 		blockB := Block{
 			Timestamp: timestamp2,
 			LastHash:  &blockAHash,
-			Data:      []string{"txB"},
+			Data:      []Transaction{Transaction{ID: "txB"}},
 		}
 		blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data)
 		blockB.Hash = &blockBHash
@@ -243,13 +243,13 @@ func TestService(t *testing.T) {
 			Timestamp: genesisTimestamp,
 			LastHash:  &genesisLastHash,
 			Hash:      &genesisHash,
-			Data:      []string{},
+			Data:      []Transaction{},
 		}
 
 		blockA := Block{
 			Timestamp: timestamp1,
 			LastHash:  &genesisHash,
-			Data:      []string{"txA"},
+			Data:      []Transaction{Transaction{ID: "txA"}},
 		}
 		blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data)
 		blockA.Hash = &blockAHash
@@ -257,7 +257,7 @@ func TestService(t *testing.T) {
 		blockB := Block{
 			Timestamp: timestamp2,
 			LastHash:  &blockAHash,
-			Data:      []string{"txB"},
+			Data:      []Transaction{Transaction{ID: "txB"}},
 		}
 		blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data)
 		blockB.Hash = &blockBHash
@@ -288,13 +288,13 @@ func TestService(t *testing.T) {
 			Timestamp: genesisTimestamp,
 			LastHash:  &genesisLastHash,
 			Hash:      &genesisHash,
-			Data:      []string{},
+			Data:      []Transaction{},
 		}
 
 		blockA := Block{
 			Timestamp: timestamp1,
 			LastHash:  &genesisHash,
-			Data:      []string{"txA"},
+			Data:      []Transaction{Transaction{ID: "txA"}},
 		}
 		blockAHash := hashing.SHA256Hash(timestamp1, genesisHash, blockA.Data)
 		blockA.Hash = &blockAHash
@@ -302,7 +302,7 @@ func TestService(t *testing.T) {
 		blockB := Block{
 			Timestamp: timestamp2,
 			LastHash:  &blockAHash,
-			Data:      []string{"txB", "double spend"},
+			Data:      []Transaction{Transaction{ID: "txB"}, Transaction{ID: "double spend"}},
 		}
 		blockBHash := hashing.SHA256Hash(timestamp2, blockAHash, blockB.Data)
 		blockB.Hash = &blockBHash
