@@ -4,7 +4,8 @@ import (
 	"time"
 )
 
-type input struct {
+// Input of transaction
+type Input struct {
 	Timestamp int64
 	Amount    uint64
 	Address   string
@@ -14,7 +15,7 @@ type input struct {
 // Transaction in data
 type Transaction struct {
 	ID     string
-	Input  input
+	Input  Input
 	Output map[string]uint64
 }
 

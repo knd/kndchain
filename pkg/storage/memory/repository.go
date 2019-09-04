@@ -33,7 +33,7 @@ func (m *MemStorage) AddBlock(minedBlock *mining.Block) error {
 		Timestamp:  minedBlock.Timestamp,
 		LastHash:   minedBlock.LastHash,
 		Hash:       minedBlock.Hash,
-		Data:       minedBlock.Data,
+		Data:       toStorageTransactions(minedBlock.Data),
 		Nonce:      minedBlock.Nonce,
 		Difficulty: minedBlock.Difficulty,
 	}
@@ -60,7 +60,7 @@ func (m *MemStorage) GetLastBlock() listing.Block {
 		Timestamp:  lastBlock.Timestamp,
 		LastHash:   lastBlock.LastHash,
 		Hash:       lastBlock.Hash,
-		Data:       lastBlock.Data,
+		Data:       toListingTransactions(lastBlock.Data),
 		Nonce:      lastBlock.Nonce,
 		Difficulty: lastBlock.Difficulty,
 	}
@@ -74,7 +74,7 @@ func (m *MemStorage) GetBlockchain() *listing.Blockchain {
 			Timestamp:  block.Timestamp,
 			LastHash:   block.LastHash,
 			Hash:       block.Hash,
-			Data:       block.Data,
+			Data:       toListingTransactions(block.Data),
 			Nonce:      block.Nonce,
 			Difficulty: block.Difficulty,
 		})
@@ -94,7 +94,7 @@ func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
 			Timestamp:  newBlock.Timestamp,
 			LastHash:   newBlock.LastHash,
 			Hash:       newBlock.Hash,
-			Data:       newBlock.Data,
+			Data:       toStorageTransactions(newBlock.Data),
 			Nonce:      newBlock.Nonce,
 			Difficulty: newBlock.Difficulty,
 		})
@@ -103,4 +103,38 @@ func (m *MemStorage) ReplaceChain(newChain *mining.Blockchain) error {
 	m.blockchain.chain = newBc
 
 	return nil
+}
+
+func toStorageTransactions(data []mining.Transaction) []Transaction {
+	var sTxs []Transaction
+	for _, transaction := range data {
+		sTxs = append(sTxs, Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return sTxs
+}
+
+func toListingTransactions(data []Transaction) []listing.Transaction {
+	var sTxs []listing.Transaction
+	for _, transaction := range data {
+		sTxs = append(sTxs, listing.Transaction{
+			ID:     transaction.ID,
+			Output: transaction.Output,
+			Input: listing.Input{
+				Timestamp: transaction.Input.Timestamp,
+				Amount:    transaction.Input.Amount,
+				Address:   transaction.Input.Address,
+				Signature: transaction.Input.Signature,
+			},
+		})
+	}
+	return sTxs
 }

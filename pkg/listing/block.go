@@ -4,7 +4,8 @@ import (
 	"time"
 )
 
-type input struct {
+// Input of transaction
+type Input struct {
 	Timestamp int64  `json:"timestamp"`
 	Amount    uint64 `json:"amount"`
 	Address   string `json:"address"`
@@ -14,7 +15,7 @@ type input struct {
 // Transaction in block data
 type Transaction struct {
 	ID     string            `json:"id"`
-	Input  input             `json:"input"`
+	Input  Input             `json:"input"`
 	Output map[string]uint64 `json:"output"`
 }
 
