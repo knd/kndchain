@@ -92,21 +92,36 @@ func (w *wallet) CreateTransaction(receiver string, amount uint64, lister listin
 
 // CalculateBalance returns the current balance of the address given blockchain history
 func CalculateBalance(lister listing.Service, address string) uint64 {
-	balance := InitialBalance
+	var balance uint64
 	bc := lister.GetBlockchain()
 	if bc == nil {
 		return InitialBalance
 	}
 
-	for _, block := range bc.Chain {
+	var foundWalletTxInBlock bool
+	for i := len(bc.Chain) - 1; i >= 0; i-- {
+		block := bc.Chain[i]
+
+		var blockAmount uint64
 		for _, tx := range block.Data {
 			if tx.Input.Address == address {
-				balance = tx.Output[address]
+				blockAmount = tx.Output[address]
+				foundWalletTxInBlock = true
 			} else if amount, ok := tx.Output[address]; ok {
-				balance += amount
+				blockAmount += amount
 			}
+		}
+
+		balance += blockAmount
+
+		if foundWalletTxInBlock {
+			break
 		}
 	}
 
-	return balance
+	if foundWalletTxInBlock {
+		return balance
+	}
+
+	return InitialBalance + balance
 }
