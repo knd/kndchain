@@ -20,7 +20,7 @@ func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.Tra
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
-	router.POST("/api/transactions", addTx(p, wal, c))
+	router.POST("/api/transactions", addTx(p, wal, c, l))
 	router.GET("/api/transactions", getTxPool(p))
 	router.GET("/api/mine-transactions", mineTransactions(miner, l)) // for testing
 
@@ -94,7 +94,7 @@ type addTxInput struct {
 	Amount   uint64 `json:"amount"`
 }
 
-func addTx(p wallet.TransactionPool, wal wallet.Wallet, c pubsub.Service) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func addTx(p wallet.TransactionPool, wal wallet.Wallet, c pubsub.Service, lister listing.Service) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -110,7 +110,7 @@ func addTx(p wallet.TransactionPool, wal wallet.Wallet, c pubsub.Service) func(w
 			tx = p.GetTransaction(wal.PubKeyHex())
 			err = tx.Append(wal, ati.Receiver, ati.Amount)
 		} else {
-			tx, err = wal.CreateTransaction(ati.Receiver, ati.Amount)
+			tx, err = wal.CreateTransaction(ati.Receiver, ati.Amount, lister)
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

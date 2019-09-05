@@ -25,5 +25,8 @@ func (m *MockedListing) GetBlockCount() uint32 {
 // GetBlockchain returns a list of blocks from genesis block
 func (m *MockedListing) GetBlockchain() *listing.Blockchain {
 	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
 	return args.Get(0).(*listing.Blockchain)
 }
