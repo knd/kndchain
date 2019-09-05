@@ -23,6 +23,7 @@ func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.Tra
 	router.POST("/api/transactions", addTx(p, wal, c, l))
 	router.GET("/api/transactions", getTxPool(p))
 	router.GET("/api/mine-transactions", mineTransactions(miner, l)) // for testing
+	router.GET("/api/mining-address", getMiningAddressInfo(wal, l))  // for testing
 
 	return router
 }
@@ -146,5 +147,23 @@ func mineTransactions(miner miner.Miner, lister listing.Service) func(w http.Res
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(lister.GetLastBlock())
+	}
+}
+
+// AddressInfo is return result from getMiningAddressInfo
+type AddressInfo struct {
+	Address string `json:"address"`
+	Balance uint64 `json:"balance"`
+}
+
+func getMiningAddressInfo(wal wallet.Wallet, lister listing.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		addressInfo := AddressInfo{
+			Address: wal.PubKeyHex(),
+			Balance: wallet.CalculateBalance(lister, wal.PubKeyHex()),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(addressInfo)
 	}
 }
