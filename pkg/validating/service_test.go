@@ -203,6 +203,30 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 	var validator Service
 	var bc *Blockchain
 
+	createTransaction := func(id string, output map[string]uint64, timestamp int64, amount uint64, address string, signature string) Transaction {
+		return Transaction{
+			ID: id,
+			Input: Input{
+				Timestamp: timestamp,
+				Amount:    amount,
+				Address:   address,
+				Signature: signature,
+			},
+			Output: output,
+		}
+	}
+
+	createBlock := func(timestamp time.Time, lastHash *string, hash *string, data []Transaction, nonce uint32, difficulty uint32) Block {
+		return Block{
+			Timestamp:  timestamp,
+			LastHash:   lastHash,
+			Hash:       hash,
+			Data:       data,
+			Nonce:      nonce,
+			Difficulty: difficulty,
+		}
+	}
+
 	beforeEach := func() {
 		validator = NewService()
 		bc = &Blockchain{}
@@ -211,7 +235,135 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 	t.Run("returns true if blockchain contains all valid transactions", func(t *testing.T) {
 		beforeEach()
 
+		blockTs, _ := time.Parse(time.RFC3339, "2019-09-06T14:18:44.226857+07:00")
+		lastHash := "0x000"
+		hash := "0x000"
+		data := []Transaction{}
+		nonce := uint32(0)
+		difficulty := uint32(3)
+
+		block := createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		blockTs, _ = time.Parse(time.RFC3339, "2019-09-06T14:50:04.265389+07:00")
+		lastHash = "0x000"
+		hash = "153bdcdd6dcb3d7c4746f91489305275efe324128d235b6d315b6d4118691184"
+		nonce = uint32(7)
+		difficulty = uint32(2)
+		data = []Transaction{
+			createTransaction("75b3d287-386d-4633-bea6-681b226dcbe5", map[string]uint64{"04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa": 810, "0x893": 100, "0x89333": 90}, 1567756159, 1000, "04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa", "027b67184af6964e3b1605c29e854cce41e1c1dfbbbfb4c0a8b3a271f3f9723f5267e7e70695a0b6ff547883d44b4e992d5c46453f92ddc8b9028185bf002dec01"),
+			createTransaction("6ff6a803-6500-44f7-89f7-dbcf53b7b701", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 999, "0x1233": 1}, 1567756188, 1000, "0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1", "fa2266c9c3f3c6c11f08715d2eb32faeae3e64545a1244a077001b0b4cabe3743b0ab01745f8cbe5b5561711724b323dba250b24a17e6a86dd18fd23346858a600"),
+			createTransaction("43b0982e-bda0-4726-a686-78b6628b2b19", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 5}, 0, 0, "MINER_REWARD", ""),
+		}
+		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
 		// perform test & verification
 		assert.True(validator.ContainsValidTransactions(bc))
 	})
+
+	t.Run("returns false if block has more than 1 reward transaction", func(t *testing.T) {
+		beforeEach()
+
+		blockTs, _ := time.Parse(time.RFC3339, "2019-09-06T14:18:44.226857+07:00")
+		lastHash := "0x000"
+		hash := "0x000"
+		data := []Transaction{}
+		nonce := uint32(0)
+		difficulty := uint32(3)
+
+		block := createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		blockTs, _ = time.Parse(time.RFC3339, "2019-09-06T14:50:04.265389+07:00")
+		lastHash = "0x000"
+		hash = "153bdcdd6dcb3d7c4746f91489305275efe324128d235b6d315b6d4118691184"
+		nonce = uint32(7)
+		difficulty = uint32(2)
+		data = []Transaction{
+			createTransaction("75b3d287-386d-4633-bea6-681b226dcbe5", map[string]uint64{"04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa": 810, "0x893": 100, "0x89333": 90}, 1567756159, 1000, "04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa", "027b67184af6964e3b1605c29e854cce41e1c1dfbbbfb4c0a8b3a271f3f9723f5267e7e70695a0b6ff547883d44b4e992d5c46453f92ddc8b9028185bf002dec01"),
+			createTransaction("6ff6a803-6500-44f7-89f7-dbcf53b7b701", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 999, "0x1233": 1}, 1567756188, 1000, "0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1", "fa2266c9c3f3c6c11f08715d2eb32faeae3e64545a1244a077001b0b4cabe3743b0ab01745f8cbe5b5561711724b323dba250b24a17e6a86dd18fd23346858a600"),
+			createTransaction("43b0982e-bda0-4726-a686-78b6628b2b19", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 5}, 0, 0, "MINER_REWARD", ""),
+			createTransaction("43b0982e", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 5}, 0, 0, "MINER_REWARD", ""), // 2nd reward transaction
+		}
+		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		// perform test & verification
+		assert.False(validator.ContainsValidTransactions(bc))
+	})
+
+	t.Run("returns false if a transaction has malformed output", func(t *testing.T) {
+		beforeEach()
+
+		blockTs, _ := time.Parse(time.RFC3339, "2019-09-06T14:18:44.226857+07:00")
+		lastHash := "0x000"
+		hash := "0x000"
+		data := []Transaction{}
+		nonce := uint32(0)
+		difficulty := uint32(3)
+
+		block := createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		blockTs, _ = time.Parse(time.RFC3339, "2019-09-06T14:50:04.265389+07:00")
+		lastHash = "0x000"
+		hash = "153bdcdd6dcb3d7c4746f91489305275efe324128d235b6d315b6d4118691184"
+		nonce = uint32(7)
+		difficulty = uint32(2)
+		data = []Transaction{
+			createTransaction("75b3d287-386d-4633-bea6-681b226dcbe5", map[string]uint64{"04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa": 810, "0x893": 100, "0x89333": 90}, 1567756159, 1000, "04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa", "027b67184af6964e3b1605c29e854cce41e1c1dfbbbfb4c0a8b3a271f3f9723f5267e7e70695a0b6ff547883d44b4e992d5c46453f92ddc8b9028185bf002dec01"),
+			createTransaction("6ff6a803-6500-44f7-89f7-dbcf53b7b701", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 99999, "0x1233": 1}, 1567756188, 1000, "0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1", "fa2266c9c3f3c6c11f08715d2eb32faeae3e64545a1244a077001b0b4cabe3743b0ab01745f8cbe5b5561711724b323dba250b24a17e6a86dd18fd23346858a600"), // transaction with malformed output
+			createTransaction("43b0982e-bda0-4726-a686-78b6628b2b19", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 5}, 0, 0, "MINER_REWARD", ""),
+		}
+		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		// perform test & verification
+		assert.False(validator.ContainsValidTransactions(bc))
+	})
+
+	t.Run("returns false if a reward transaction has malformed output", func(t *testing.T) {
+		beforeEach()
+
+		blockTs, _ := time.Parse(time.RFC3339, "2019-09-06T14:18:44.226857+07:00")
+		lastHash := "0x000"
+		hash := "0x000"
+		data := []Transaction{}
+		nonce := uint32(0)
+		difficulty := uint32(3)
+
+		block := createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		blockTs, _ = time.Parse(time.RFC3339, "2019-09-06T14:50:04.265389+07:00")
+		lastHash = "0x000"
+		hash = "153bdcdd6dcb3d7c4746f91489305275efe324128d235b6d315b6d4118691184"
+		nonce = uint32(7)
+		difficulty = uint32(2)
+		data = []Transaction{
+			createTransaction("75b3d287-386d-4633-bea6-681b226dcbe5", map[string]uint64{"04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa": 810, "0x893": 100, "0x89333": 90}, 1567756159, 1000, "04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa", "027b67184af6964e3b1605c29e854cce41e1c1dfbbbfb4c0a8b3a271f3f9723f5267e7e70695a0b6ff547883d44b4e992d5c46453f92ddc8b9028185bf002dec01"),
+			createTransaction("6ff6a803-6500-44f7-89f7-dbcf53b7b701", map[string]uint64{"0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 999, "0x1233": 1}, 1567756188, 1000, "0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1", "fa2266c9c3f3c6c11f08715d2eb32faeae3e64545a1244a077001b0b4cabe3743b0ab01745f8cbe5b5561711724b323dba250b24a17e6a86dd18fd23346858a600"),
+			createTransaction("43b0982e-bda0-4726-a686-78b6628b2b19", map[string]uint64{"0x123": 5, "0444e8eb4de7752fbcbdc28082b63f36b0d372e06952bd6382e3ef3232946e9f44cd641076458acaa2549725b7e41d4f204ef15f3071d1bc2e3b298d00b5a532d1": 10}, 0, 0, "MINER_REWARD", ""), // malformed reward transaction output
+		}
+		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
+		bc.Chain = append(bc.Chain, block)
+
+		// perform test & verification
+		assert.False(validator.ContainsValidTransactions(bc))
+	})
+
+	/*
+		t.Run("returns false if a transaction has malformed input", func(t *testing.T) {
+
+			// perform test & verification
+			assert.False(validator.ContainsValidTransactions(bc))
+		})
+
+		t.Run("returns false if a block contains identical transactions", func(t *testing.T) {
+
+			// perform test & verification
+			assert.False(validator.ContainsValidTransactions(bc))
+		})
+	*/
 }

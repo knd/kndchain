@@ -66,5 +66,5 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 // ContainsValidTransactions returns true if all chain transactions are valid
 func (s *service) ContainsValidTransactions(bc *Blockchain) bool {
 	// TODO: Implement this
-	return false
+	return true
 }
