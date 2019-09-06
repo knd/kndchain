@@ -68,7 +68,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 999)
 
 		// perform test
-		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
 
 		// test verification
 		assert.Equal(uint32(3), difficulty)
@@ -78,7 +78,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
 
 		// perform test
-		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
 
 		// test verficiation
 		assert.Equal(uint32(1), difficulty)
@@ -88,7 +88,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1000)
 
 		// perform test
-		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
 
 		// test verficiation
 		assert.Equal(uint32(2), difficulty)
@@ -99,7 +99,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
 
 		// perform test
-		difficulty := AdjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
 
 		// test verficiation
 		assert.Equal(uint32(1), difficulty)
@@ -108,7 +108,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 
 func TestHexStringToBinary(t *testing.T) {
 	// https://www.binaryhexconverter.com/hex-to-binary-converter
-	assert.Equal(t, "0000000100100011010001011000100100010000101010111100110111101111", HexStringToBinary("0123458910abcdef"))
+	assert.Equal(t, "0000000100100011010001011000100100010000101010111100110111101111", hexStringToBinary("0123458910abcdef"))
 }
 
 func TestService(t *testing.T) {
@@ -149,7 +149,7 @@ func TestService(t *testing.T) {
 		assert.Nil(err)
 		assert.NotEmpty(newBlock.Timestamp)
 		assert.Equal("0x456", *newBlock.LastHash)
-		assert.Equal("00", HexStringToBinary(*newBlock.Hash)[:newBlock.Difficulty])
+		assert.Equal("00", hexStringToBinary(*newBlock.Hash)[:newBlock.Difficulty])
 		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp.Unix(), *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
 		assert.Equal(data, newBlock.Data)
 	})

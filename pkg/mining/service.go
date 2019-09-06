@@ -105,8 +105,7 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 	return yieldBlock(time.Now(), &lastBlockHash, &blockHash, data, blockNonce, blockDifficulty), nil
 }
 
-// AdjustBlockDifficulty adjusts the difficulty in the current mining block
-func AdjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
+func adjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
 	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(MineRate) * time.Millisecond) {
 		return lastBlock.Difficulty + 1
 	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(MineRate) * time.Millisecond) {
@@ -133,9 +132,9 @@ func (s *service) MineNewBlock(lastBlock *Block, data []Transaction) (*Block, er
 	for {
 		nonce++
 		timestamp = time.Now()
-		difficulty = AdjustBlockDifficulty(*lastBlock, timestamp)
+		difficulty = adjustBlockDifficulty(*lastBlock, timestamp)
 		hash = hashing.SHA256Hash(timestamp.Unix(), *lastBlock.Hash, data, nonce, difficulty)
-		if HexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
+		if hexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break
 		}
 	}
@@ -144,7 +143,7 @@ func (s *service) MineNewBlock(lastBlock *Block, data []Transaction) (*Block, er
 }
 
 // HexStringToBinary converts the hex string to binary string representation
-func HexStringToBinary(s string) string {
+func hexStringToBinary(s string) string {
 	res := ""
 	b, _ := hex.DecodeString(s)
 	for _, c := range b {
@@ -173,6 +172,7 @@ func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []Tran
 	}
 }
 
+// ReplaceChain replaces valid incoming chain with existing chain
 func (s *service) ReplaceChain(newChain *Blockchain) error {
 	if newChain == nil {
 		return ErrInvalidChain
@@ -186,37 +186,4 @@ func (s *service) ReplaceChain(newChain *Blockchain) error {
 	}
 
 	return s.blockchain.ReplaceChain(newChain)
-}
-
-func toValidatingChain(newChain *Blockchain) *validating.Blockchain {
-	vBlockchain := &validating.Blockchain{}
-	for _, block := range newChain.Chain {
-		vBlock := &validating.Block{
-			Timestamp:  block.Timestamp,
-			LastHash:   block.LastHash,
-			Hash:       block.Hash,
-			Data:       toValidatingTransactions(block.Data),
-			Nonce:      block.Nonce,
-			Difficulty: block.Difficulty,
-		}
-		vBlockchain.Chain = append(vBlockchain.Chain, *vBlock)
-	}
-	return vBlockchain
-}
-
-func toValidatingTransactions(data []Transaction) []validating.Transaction {
-	var vTxs []validating.Transaction
-	for _, transaction := range data {
-		vTxs = append(vTxs, validating.Transaction{
-			ID:     transaction.ID,
-			Output: transaction.Output,
-			Input: validating.Input{
-				Timestamp: transaction.Input.Timestamp,
-				Amount:    transaction.Input.Amount,
-				Address:   transaction.Input.Address,
-				Signature: transaction.Input.Signature,
-			},
-		})
-	}
-	return vTxs
 }
