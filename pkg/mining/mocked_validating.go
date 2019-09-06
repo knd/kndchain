@@ -15,3 +15,9 @@ func (m *MockedValidating) IsValidChain(bc *validating.Blockchain) bool {
 	args := m.Called(bc)
 	return args.Bool(0)
 }
+
+// ContainsValidTransactions returns true if blockchain contains valid transactions
+func (m *MockedValidating) ContainsValidTransactions(bc *validating.Blockchain) bool {
+	args := m.Called(bc)
+	return args.Bool(0)
+}

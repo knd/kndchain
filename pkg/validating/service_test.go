@@ -197,3 +197,21 @@ func TestService_IsInvalidChainWhenLastBlockJumpsDifficulty(t *testing.T) {
 	// perform test & verification
 	assert.False(t, validatingService.IsValidChain(blockchain))
 }
+
+func TestService_ContainsValidTransactions(t *testing.T) {
+	assert := assert.New(t)
+	var validator Service
+	var bc *Blockchain
+
+	beforeEach := func() {
+		validator = NewService()
+		bc = &Blockchain{}
+	}
+
+	t.Run("returns true if blockchain contains all valid transactions", func(t *testing.T) {
+		beforeEach()
+
+		// perform test & verification
+		assert.True(validator.ContainsValidTransactions(bc))
+	})
+}

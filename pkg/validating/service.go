@@ -9,6 +9,7 @@ import (
 // Service provides blockchain validating operations
 type Service interface {
 	IsValidChain(bc *Blockchain) bool
+	ContainsValidTransactions(bc *Blockchain) bool
 }
 
 type service struct{}
@@ -60,4 +61,10 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 	}
 
 	return true
+}
+
+// ContainsValidTransactions returns true if all chain transactions are valid
+func (s *service) ContainsValidTransactions(bc *Blockchain) bool {
+	// TODO: Implement this
+	return false
 }
