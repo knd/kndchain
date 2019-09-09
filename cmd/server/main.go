@@ -54,9 +54,9 @@ func main() {
 	case Memory:
 		r := memory.NewRepository()
 
-		calculatingService = calculating.NewService()
-		validatingService = validating.NewService(calculatingService)
 		listingService = listing.NewService(r)
+		calculatingService = calculating.NewService()
+		validatingService = validating.NewService(listingService, calculatingService)
 		miningService = mining.NewService(r, listingService, validatingService, nil)
 	}
 

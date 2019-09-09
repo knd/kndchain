@@ -53,7 +53,7 @@ func main() {
 		storage := memory.NewRepository()
 
 		lister = listing.NewService(storage)
-		validator = validating.NewService(calculating.NewService())
+		validator = validating.NewService(lister, calculating.NewService())
 		miner = mining.NewService(storage, lister, validator, nil)
 	}
 

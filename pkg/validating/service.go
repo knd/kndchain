@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math"
 
+	"github.com/knd/kndchain/pkg/listing"
+
 	"github.com/knd/kndchain/pkg/calculating"
 
 	"github.com/knd/kndchain/pkg/config"
@@ -20,12 +22,13 @@ type Service interface {
 }
 
 type service struct {
+	lister     listing.Service
 	calculator calculating.Service
 }
 
 // NewService creates a validating service with necessary dependencies
-func NewService(c calculating.Service) Service {
-	return &service{c}
+func NewService(l listing.Service, c calculating.Service) Service {
+	return &service{l, c}
 }
 
 // IsValidChain returns true if list of blocks compose valid blockchain
@@ -132,7 +135,7 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 		return false, errors.New("Empty blockchain")
 	}
 
-	cBlockchain := toCalculatingBlockchain(bc)
+	// cBlockchain := toCalculatingBlockchain(bc)
 	for i := 0; i < len(bc.Chain); i++ {
 		block := bc.Chain[i]
 		rewardTransactionCount := 0
@@ -153,10 +156,10 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 					return valid, ErrInvalidMinerRewardAmount
 				}
 
-				senderBalance := s.calculator.Balance(transaction.Input.Address, cBlockchain)
-				if transaction.Input.Amount != senderBalance {
-					return false, ErrInvalidInputBalance
-				}
+				// senderBalance := s.calculator.Balance(transaction.Input.Address, cBlockchain)
+				// if transaction.Input.Amount != senderBalance {
+				// 	return false, ErrInvalidInputBalance
+				// }
 			}
 		}
 	}

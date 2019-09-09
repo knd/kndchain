@@ -1,4 +1,4 @@
-package mining
+package validating
 
 import (
 	"github.com/knd/kndchain/pkg/listing"
