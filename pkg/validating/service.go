@@ -1,10 +1,12 @@
 package validating
 
 import (
+	"encoding/hex"
 	"errors"
 	"math"
 
 	"github.com/knd/kndchain/pkg/config"
+	"github.com/knd/kndchain/pkg/crypto"
 
 	"github.com/knd/kndchain/pkg/hashing"
 )
@@ -66,6 +68,51 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 	return true
 }
 
+// ErrInvalidOutputTotalBalance invalid output total balance compared with input amount
+var ErrInvalidOutputTotalBalance = errors.New("Output has invalid total balance")
+
+// ErrInvalidSignature invalid signature
+var ErrInvalidSignature = errors.New("Signature is invalid")
+
+// ErrInvalidPubKey invalid public key
+var ErrInvalidPubKey = errors.New("Invalid public key")
+
+// ErrCannotGetOutputBytes indicates error obtaining output bytes
+var ErrCannotGetOutputBytes = errors.New("Cannot obtain output bytes")
+
+// IsValidTransaction returns true if transaction itself contains
+// valid input and output information
+func IsValidTransaction(tx Transaction) (bool, error) {
+	i := tx.Input
+	o := tx.Output
+
+	var oBalance uint64
+	for _, oAmount := range o {
+		oBalance += oAmount
+	}
+
+	if i.Amount != oBalance {
+		return false, ErrInvalidOutputTotalBalance
+	}
+
+	pubKeyInByte, err := hex.DecodeString(i.Address)
+	if err != nil {
+		return false, ErrInvalidPubKey
+	}
+
+	outputBytes, err := hex.DecodeString(hashing.SHA256Hash(tx.Output))
+	if err != nil {
+		return false, ErrCannotGetOutputBytes
+	}
+
+	sigBytes, _ := hex.DecodeString(i.Signature)
+	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, sigBytes) {
+		return false, ErrInvalidSignature
+	}
+
+	return true, nil
+}
+
 // ErrMinerRewardExceedsLimit indicates when miner reward is more than 1
 var ErrMinerRewardExceedsLimit = errors.New("Miner reward exceeds limit")
 
@@ -92,6 +139,10 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 
 				if len(transaction.Output) > 1 || getFirstValueOfMap(transaction.Output) != config.MiningReward {
 					return false, ErrInvalidMinerRewardAmount
+				}
+			} else {
+				if valid, err := IsValidTransaction(transaction); !valid && err != nil {
+					return valid, ErrInvalidMinerRewardAmount
 				}
 			}
 		}

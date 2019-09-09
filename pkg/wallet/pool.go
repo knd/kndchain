@@ -3,6 +3,8 @@ package wallet
 import (
 	"errors"
 
+	"github.com/knd/kndchain/pkg/validating"
+
 	"github.com/knd/kndchain/pkg/listing"
 )
 
@@ -82,7 +84,18 @@ func (p *transactionPool) SetPool(newPool map[string]Transaction) error {
 func (p *transactionPool) ValidTransactions() []Transaction {
 	var validTxs []Transaction
 	for _, tx := range p.transactions {
-		valid, err := IsValidTransaction(tx)
+		validatingTx := validating.Transaction{
+			ID:     tx.GetID(),
+			Output: tx.GetOutput(),
+			Input: validating.Input{
+				Timestamp: tx.GetInput().Timestamp,
+				Amount:    tx.GetInput().Amount,
+				Address:   tx.GetInput().Address,
+				Signature: tx.GetInput().Signature,
+			},
+		}
+
+		valid, err := validating.IsValidTransaction(validatingTx)
 		if valid && err == nil {
 			validTxs = append(validTxs, tx)
 		}

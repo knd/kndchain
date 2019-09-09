@@ -9,7 +9,6 @@ import (
 	"github.com/knd/kndchain/pkg/config"
 
 	"github.com/google/uuid"
-	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/hashing"
 )
 
@@ -103,51 +102,6 @@ func (t *Tx) generateInput(w Wallet, op Output) Input {
 		Address:   w.PubKeyHex(),
 		Signature: hex.EncodeToString(w.Sign(ob)),
 	}
-}
-
-// ErrInvalidOutputTotalBalance invalid output total balance compared with input amount
-var ErrInvalidOutputTotalBalance = errors.New("Output has invalid total balance")
-
-// ErrInvalidSignature invalid signature
-var ErrInvalidSignature = errors.New("Signature is invalid")
-
-// ErrInvalidPubKey invalid public key
-var ErrInvalidPubKey = errors.New("Invalid public key")
-
-// ErrCannotGetOutputBytes indicates error obtaining output bytes
-var ErrCannotGetOutputBytes = errors.New("Cannot obtain output bytes")
-
-// IsValidTransaction returns true if transaction itself contains
-// valid input and output information
-func IsValidTransaction(tx Transaction) (bool, error) {
-	i := tx.GetInput()
-	o := tx.GetOutput()
-
-	var oBalance uint64
-	for _, oAmount := range o {
-		oBalance += oAmount
-	}
-
-	if i.Amount != oBalance {
-		return false, ErrInvalidOutputTotalBalance
-	}
-
-	pubKeyInByte, err := hex.DecodeString(i.Address)
-	if err != nil {
-		return false, ErrInvalidPubKey
-	}
-
-	outputBytes, err := hex.DecodeString(hashing.SHA256Hash(tx.GetOutput()))
-	if err != nil {
-		return false, ErrCannotGetOutputBytes
-	}
-
-	sigBytes, _ := hex.DecodeString(i.Signature)
-	if !crypto.NewSecp256k1Generator().Verify(pubKeyInByte, outputBytes, sigBytes) {
-		return false, ErrInvalidSignature
-	}
-
-	return true, nil
 }
 
 // GetRewardTransactionInput returns the special input in the reward tx to miner

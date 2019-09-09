@@ -3,7 +3,6 @@ package wallet
 import (
 	"encoding/hex"
 	"testing"
-	"time"
 
 	"github.com/knd/kndchain/pkg/config"
 
@@ -69,103 +68,6 @@ func TestTransaction_Input(t *testing.T) {
 
 		sigInBytes, _ := hex.DecodeString(tx.GetInput().Signature)
 		assert.True(secp256k1.Verify(senderWallet.PubKey(), ob, sigInBytes))
-	})
-}
-
-func TestIsValidTransaction(t *testing.T) {
-	assert := assert.New(t)
-
-	t.Run("returns true if tx is valid", func(t *testing.T) {
-		secp256k1 := crypto.NewSecp256k1Generator()
-		senderWallet := NewWallet(secp256k1)
-		receiverWallet := NewWallet(secp256k1)
-		tx := NewTransaction(senderWallet, receiverWallet.PubKeyHex(), 99)
-
-		// perform test
-		valid, _ := IsValidTransaction(tx)
-
-		// test verification
-		assert.True(valid)
-	})
-
-	t.Run("returns false if tx ouptut is invalid", func(t *testing.T) {
-		iT := time.Now().Unix()
-		senderPubKeyHex := "0x123"
-		receiverPubKeyHex := "0x456"
-		tx := new(MockedTransaction)
-		var s [65]byte
-		copy(s[:], []byte("data"))
-		tx.On("GetInput").Return(Input{
-			Timestamp: iT,
-			Amount:    1000,
-			Address:   senderPubKeyHex,
-			Signature: hex.EncodeToString(s[:]),
-		})
-		tx.On("GetOutput").Return(Output{
-			senderPubKeyHex:   991,
-			receiverPubKeyHex: 10,
-		})
-
-		// perform test
-		valid, err := IsValidTransaction(tx)
-
-		// test verification
-		assert.False(valid)
-		assert.Equal(ErrInvalidOutputTotalBalance, err)
-	})
-
-	t.Run("returns false if tx input signature invalid", func(t *testing.T) {
-		iT := time.Now().Unix()
-		secp256k1 := crypto.NewSecp256k1Generator()
-		senderWallet := NewWallet(secp256k1)
-		receiverWallet := NewWallet(secp256k1)
-		tx := new(MockedTransaction)
-		var s [65]byte
-		copy(s[:], []byte("data"))
-		tx.On("GetInput").Return(Input{
-			Timestamp: iT,
-			Amount:    1000,
-			Address:   senderWallet.PubKeyHex(),
-			Signature: hex.EncodeToString(s[:]),
-		})
-		tx.On("GetOutput").Return(Output{
-			senderWallet.PubKeyHex():   uint64(990),
-			receiverWallet.PubKeyHex(): uint64(10),
-		})
-
-		// perform test
-		valid, err := IsValidTransaction(tx)
-
-		// test verification
-		assert.False(valid)
-		assert.Equal(ErrInvalidSignature, err)
-	})
-
-	t.Run("returns false if tx input signature is signed by different key", func(t *testing.T) {
-		iT := time.Now().Unix()
-		secp256k1 := crypto.NewSecp256k1Generator()
-		senderWallet := NewWallet(secp256k1)
-		receiverWallet := NewWallet(secp256k1)
-		tx := new(MockedTransaction)
-		output := Output{
-			senderWallet.PubKeyHex():   uint64(990),
-			receiverWallet.PubKeyHex(): uint64(10),
-		}
-		tx.On("GetOutput").Return(output)
-		outputBytes, _ := hex.DecodeString(hashing.SHA256Hash(output))
-		tx.On("GetInput").Return(Input{
-			Timestamp: iT,
-			Amount:    1000,
-			Address:   senderWallet.PubKeyHex(),
-			Signature: hex.EncodeToString(receiverWallet.Sign(outputBytes)),
-		})
-
-		// perform test
-		valid, err := IsValidTransaction(tx)
-
-		// test verification
-		assert.False(valid)
-		assert.Equal(ErrInvalidSignature, err)
 	})
 }
 
