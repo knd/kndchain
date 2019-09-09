@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,9 @@ var ErrMissingLastBlock = errors.New("Missing last block")
 
 // ErrInvalidChain is used when trying to replace an invalid chain
 var ErrInvalidChain = errors.New("Invalid chain is given to replace original chain")
+
+// ErrInvalidTransactions is used when trying to replace chain with invalid transactions
+var ErrInvalidTransactions = errors.New("Invalid transactions")
 
 // ErrShorterChain is used when trying to replace a shorter chain
 var ErrShorterChain = errors.New("Current chain is the longest, Incoming chain is no longer, No replacement")
@@ -165,6 +169,10 @@ func (s *service) ReplaceChain(newChain *Blockchain) error {
 	vChain := toValidatingChain(newChain)
 	if !s.validating.IsValidChain(vChain) {
 		return ErrInvalidChain
+	}
+	if valid, err := s.validating.ContainsValidTransactions(vChain); !valid || err != nil {
+		log.Printf("Failed to replace chain %v", err)
+		return ErrInvalidTransactions
 	}
 
 	return s.blockchain.ReplaceChain(newChain)
