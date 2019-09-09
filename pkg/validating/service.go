@@ -119,6 +119,9 @@ var ErrMinerRewardExceedsLimit = errors.New("Miner reward exceeds limit")
 // ErrInvalidMinerRewardAmount indicates when miner reward tx amount is not same as config
 var ErrInvalidMinerRewardAmount = errors.New("Miner reward amount is invalid")
 
+// ErrInvalidInputBalance indicates when the sender has invalid input balance
+var ErrInvalidInputBalance = errors.New("Invalid input balance")
+
 // ContainsValidTransactions returns true if all chain transactions are valid
 func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 	if bc == nil {
