@@ -129,6 +129,9 @@ var ErrInvalidMinerRewardAmount = errors.New("Miner reward amount is invalid")
 // ErrInvalidInputBalance indicates when the sender has invalid input balance
 var ErrInvalidInputBalance = errors.New("Invalid input balance")
 
+// ErrDuplicateTransaction indicates when the sender has duplicate transactions in same block
+var ErrDuplicateTransaction = errors.New("Duplicate transaction in same block")
+
 // ContainsValidTransactions returns true if all chain transactions are valid
 func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 	if bc == nil {
@@ -139,6 +142,7 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 	for i := 0; i < len(bc.Chain); i++ {
 		block := bc.Chain[i]
 		rewardTransactionCount := 0
+		senderTransactions := map[string]bool{}
 
 		for _, transaction := range block.Data {
 			if transaction.Input.Address == config.RewardTxInputAddress {
@@ -160,6 +164,11 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 				if transaction.Input.Amount != senderBalance {
 					return false, ErrInvalidInputBalance
 				}
+
+				if _, present := senderTransactions[transaction.Input.Address]; present {
+					return false, ErrDuplicateTransaction
+				}
+				senderTransactions[transaction.Input.Address] = true
 			}
 		}
 	}
