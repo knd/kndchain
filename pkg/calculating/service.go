@@ -1,8 +1,6 @@
 package calculating
 
 import (
-	"log"
-
 	"github.com/knd/kndchain/pkg/config"
 )
 
@@ -30,10 +28,10 @@ func (s *service) BalanceByBlockIndex(address string, bc *Blockchain, index int)
 		return config.InitialBalance
 	}
 	if index >= len(bc.Chain) {
-		log.Fatalf("Index is greater than block count index=%d", index)
+		index = len(bc.Chain) - 1
 	}
 	if index < 0 {
-		log.Fatalf("Index is less than zero index=%d", index)
+		index = 0
 	}
 
 	var foundWalletTxInBlock bool

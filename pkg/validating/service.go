@@ -135,7 +135,7 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 		return false, errors.New("Empty blockchain")
 	}
 
-	cBlockchain := toCalculatingBlockchain(bc)
+	cBlockchain := toCalculatingBlockchain(s.lister.GetBlockchain())
 	for i := 0; i < len(bc.Chain); i++ {
 		block := bc.Chain[i]
 		rewardTransactionCount := 0
@@ -156,7 +156,7 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 					return valid, ErrInvalidMinerRewardAmount
 				}
 
-				senderBalance := s.calculator.Balance(transaction.Input.Address, cBlockchain)
+				senderBalance := s.calculator.BalanceByBlockIndex(transaction.Input.Address, cBlockchain, i-1)
 				if transaction.Input.Amount != senderBalance {
 					return false, ErrInvalidInputBalance
 				}
@@ -174,7 +174,7 @@ func getFirstValueOfMap(m map[string]uint64) uint64 {
 	return 0
 }
 
-func toCalculatingBlockchain(bc *Blockchain) *calculating.Blockchain {
+func toCalculatingBlockchain(bc *listing.Blockchain) *calculating.Blockchain {
 	if bc == nil {
 		return nil
 	}
