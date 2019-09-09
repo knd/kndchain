@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/knd/kndchain/pkg/calculating"
+
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
@@ -46,6 +48,7 @@ func main() {
 	var miningService mining.Service
 	var listingService listing.Service
 	var validatingService validating.Service
+	var calculatingService calculating.Service
 	var p2pComm pubsub.Service
 
 	switch storageType {
@@ -53,11 +56,12 @@ func main() {
 		r := memory.NewRepository()
 
 		validatingService = validating.NewService()
+		calculatingService = calculating.NewService()
 		listingService = listing.NewService(r)
 		miningService = mining.NewService(r, listingService, validatingService, nil)
 	}
 
-	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator())
+	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService)
 	transactionPool := wallet.NewTransactionPool(listingService)
 
 	switch networkingType {
@@ -74,7 +78,7 @@ func main() {
 	}
 
 	miner := miner.NewMiner(miningService, listingService, transactionPool, minerWallet, p2pComm)
-	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner)
+	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner, calculatingService)
 
 	var port int
 	if len(os.Args) > 1 && os.Args[1] == "beacon" {

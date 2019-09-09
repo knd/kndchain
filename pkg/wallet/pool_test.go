@@ -17,9 +17,9 @@ func TestTransactionPool(t *testing.T) {
 	var transactionPool TransactionPool
 	var txA, txB, txC Transaction
 	secp256k1 := crypto.NewSecp256k1Generator()
-	walletA := NewWallet(secp256k1)
-	walletB := NewWallet(secp256k1)
-	walletC := NewWallet(secp256k1)
+	walletA := NewWallet(secp256k1, new(MockedCalculating))
+	walletB := NewWallet(secp256k1, new(MockedCalculating))
+	walletC := NewWallet(secp256k1, new(MockedCalculating))
 	var validTransactions []Transaction
 	mockedListing := new(MockedListing)
 

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"log"
 
+	"github.com/knd/kndchain/pkg/calculating"
+	"github.com/knd/kndchain/pkg/config"
+
 	"github.com/knd/kndchain/pkg/listing"
 )
-
-// InitialBalance is the balance when wallet is created
-const InitialBalance uint64 = 1000
 
 // ErrTxAmountExceedsBalance indicates tx amount exceeds current balance
 var ErrTxAmountExceedsBalance = errors.New("Tx amount exceeds balance")
@@ -35,17 +35,19 @@ type wallet struct {
 	balance    uint64
 	publicKey  []byte
 	privateKey []byte
+	calculator calculating.Service
 }
 
 // NewWallet creates a wallet with necessary dependencies
-func NewWallet(kpg KeyPairGenerator) Wallet {
+func NewWallet(kpg KeyPairGenerator, c calculating.Service) Wallet {
 	pubKey, privKey := kpg.Generate()
 
 	w := &wallet{
 		gen:        kpg,
-		balance:    InitialBalance,
+		balance:    config.InitialBalance,
 		publicKey:  pubKey,
 		privateKey: privKey,
+		calculator: c,
 	}
 
 	return w
@@ -78,9 +80,9 @@ func (w *wallet) Sign(data []byte) []byte {
 
 // CreateTransaction creates a new transaction from this wallet
 func (w *wallet) CreateTransaction(receiver string, amount uint64, lister listing.Service) (Transaction, error) {
-	bc := lister.GetBlockchain()
+	bc := toCalculatingBlockchain(lister.GetBlockchain())
 	if bc != nil {
-		w.balance = CalculateBalance(lister, w.PubKeyHex())
+		w.balance = w.calculator.Balance(w.PubKeyHex(), bc)
 	}
 
 	if amount > w.Balance() {
@@ -90,38 +92,37 @@ func (w *wallet) CreateTransaction(receiver string, amount uint64, lister listin
 	return NewTransaction(w, receiver, amount), nil
 }
 
-// CalculateBalance returns the current balance of the address given blockchain history
-func CalculateBalance(lister listing.Service, address string) uint64 {
-	var balance uint64
-	bc := lister.GetBlockchain()
+func toCalculatingBlockchain(bc *listing.Blockchain) *calculating.Blockchain {
 	if bc == nil {
-		return InitialBalance
+		return nil
 	}
 
-	var foundWalletTxInBlock bool
-	for i := len(bc.Chain) - 1; i >= 0; i-- {
-		block := bc.Chain[i]
-
-		var blockAmount uint64
-		for _, tx := range block.Data {
-			if tx.Input.Address == address {
-				blockAmount = tx.Output[address]
-				foundWalletTxInBlock = true
-			} else if amount, ok := tx.Output[address]; ok {
-				blockAmount += amount
+	result := &calculating.Blockchain{}
+	for _, block := range bc.Chain {
+		cTransactions := []calculating.Transaction{}
+		for _, transaction := range block.Data {
+			cTx := calculating.Transaction{
+				ID:     transaction.ID,
+				Output: transaction.Output,
+				Input: calculating.Input{
+					Timestamp: transaction.Input.Timestamp,
+					Amount:    transaction.Input.Amount,
+					Address:   transaction.Input.Address,
+					Signature: transaction.Input.Signature,
+				},
 			}
+			cTransactions = append(cTransactions, cTx)
 		}
-
-		balance += blockAmount
-
-		if foundWalletTxInBlock {
-			break
+		cBlock := calculating.Block{
+			Timestamp:  block.Timestamp,
+			LastHash:   block.LastHash,
+			Hash:       block.Hash,
+			Data:       cTransactions,
+			Nonce:      block.Nonce,
+			Difficulty: block.Difficulty,
 		}
+		result.Chain = append(result.Chain, cBlock)
 	}
 
-	if foundWalletTxInBlock {
-		return balance
-	}
-
-	return InitialBalance + balance
+	return result
 }

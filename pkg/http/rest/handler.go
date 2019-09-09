@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/knd/kndchain/pkg/calculating"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/miner"
@@ -15,15 +17,15 @@ import (
 )
 
 // Handler provides list of routes and action handlers
-func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet, miner miner.Miner) http.Handler {
+func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet, miner miner.Miner, cal calculating.Service) http.Handler {
 	router := httprouter.New()
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
 	router.POST("/api/transactions", addTx(p, wal, c, l))
 	router.GET("/api/transactions", getTxPool(p))
-	router.GET("/api/mine-transactions", mineTransactions(miner, l)) // for testing
-	router.GET("/api/mining-address", getMiningAddressInfo(wal, l))  // for testing
+	router.GET("/api/mine-transactions", mineTransactions(miner, l))     // for testing
+	router.GET("/api/mining-address", getMiningAddressInfo(wal, l, cal)) // for testing
 
 	return router
 }
@@ -156,14 +158,49 @@ type AddressInfo struct {
 	Balance uint64 `json:"balance"`
 }
 
-func getMiningAddressInfo(wal wallet.Wallet, lister listing.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getMiningAddressInfo(wal wallet.Wallet, lister listing.Service, cal calculating.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		addressInfo := AddressInfo{
 			Address: wal.PubKeyHex(),
-			Balance: wallet.CalculateBalance(lister, wal.PubKeyHex()),
+			Balance: cal.Balance(wal.PubKeyHex(), toCalculatingBlockchain(lister.GetBlockchain())),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(addressInfo)
 	}
+}
+
+func toCalculatingBlockchain(bc *listing.Blockchain) *calculating.Blockchain {
+	if bc == nil {
+		return nil
+	}
+
+	result := &calculating.Blockchain{}
+	for _, block := range bc.Chain {
+		cTransactions := []calculating.Transaction{}
+		for _, transaction := range block.Data {
+			cTx := calculating.Transaction{
+				ID:     transaction.ID,
+				Output: transaction.Output,
+				Input: calculating.Input{
+					Timestamp: transaction.Input.Timestamp,
+					Amount:    transaction.Input.Amount,
+					Address:   transaction.Input.Address,
+					Signature: transaction.Input.Signature,
+				},
+			}
+			cTransactions = append(cTransactions, cTx)
+		}
+		cBlock := calculating.Block{
+			Timestamp:  block.Timestamp,
+			LastHash:   block.LastHash,
+			Hash:       block.Hash,
+			Data:       cTransactions,
+			Nonce:      block.Nonce,
+			Difficulty: block.Difficulty,
+		}
+		result.Chain = append(result.Chain, cBlock)
+	}
+
+	return result
 }
