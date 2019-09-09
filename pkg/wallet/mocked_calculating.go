@@ -15,3 +15,9 @@ func (m *MockedCalculating) Balance(address string, bc *calculating.Blockchain) 
 	args := m.Called(address, bc)
 	return args.Get(0).(uint64)
 }
+
+// BalanceByBlockIndex returns balance of address based on given blockchain history at block index
+func (m *MockedCalculating) BalanceByBlockIndex(address string, bc *calculating.Blockchain, index int) uint64 {
+	args := m.Called(address, bc, index)
+	return args.Get(0).(uint64)
+}
