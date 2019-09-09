@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/knd/kndchain/pkg/calculating"
+
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/storage/memory"
@@ -51,7 +53,7 @@ func main() {
 		storage := memory.NewRepository()
 
 		lister = listing.NewService(storage)
-		validator = validating.NewService()
+		validator = validating.NewService(calculating.NewService())
 		miner = mining.NewService(storage, lister, validator, nil)
 	}
 

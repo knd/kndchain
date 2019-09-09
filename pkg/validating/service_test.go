@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestService_IsInvalidChainWhenGenesisBlockIsInvalid(t *testing.T) {
-	validatingService := NewService()
+	validatingService := NewService(calculating.NewService())
 	lastHash := "0x123"
 	hash := "0x456"
 	blockchain := &Blockchain{
@@ -30,7 +31,7 @@ func TestService_IsInvalidChainWhenGenesisBlockIsInvalid(t *testing.T) {
 }
 
 func TestService_IsInvalidChainWhenLastHashIsTampered(t *testing.T) {
-	validatingService := NewService()
+	validatingService := NewService(calculating.NewService())
 	genesisTimestamp := time.Now()
 	lastHash := "0x123"
 	hash := "0x456"
@@ -61,7 +62,7 @@ func TestService_IsInvalidChainWhenLastHashIsTampered(t *testing.T) {
 }
 
 func TestService_IsInvalidChainWhenTimestampIsNotInOrder(t *testing.T) {
-	validatingService := NewService()
+	validatingService := NewService(calculating.NewService())
 
 	genesisLastHash := "0x123"
 	genesisHash := "0x456"
@@ -107,7 +108,7 @@ func TestService_IsInvalidChainWhenTimestampIsNotInOrder(t *testing.T) {
 }
 
 func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
-	validatingService := NewService()
+	validatingService := NewService(calculating.NewService())
 
 	genesisLastHash := "0x123"
 	genesisHash := "0x456"
@@ -153,7 +154,7 @@ func TestService_IsValidChainWhenChainContainsOnlyValidBlocks(t *testing.T) {
 }
 
 func TestService_IsInvalidChainWhenLastBlockJumpsDifficulty(t *testing.T) {
-	validatingService := NewService()
+	validatingService := NewService(calculating.NewService())
 
 	genesisLastHash := "0x123"
 	genesisHash := "0x456"
@@ -228,7 +229,7 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 	}
 
 	beforeEach := func() {
-		validator = NewService()
+		validator = NewService(calculating.NewService())
 		bc = &Blockchain{}
 	}
 

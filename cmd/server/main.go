@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/knd/kndchain/pkg/calculating"
-
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
@@ -55,8 +54,8 @@ func main() {
 	case Memory:
 		r := memory.NewRepository()
 
-		validatingService = validating.NewService()
 		calculatingService = calculating.NewService()
+		validatingService = validating.NewService(calculatingService)
 		listingService = listing.NewService(r)
 		miningService = mining.NewService(r, listingService, validatingService, nil)
 	}

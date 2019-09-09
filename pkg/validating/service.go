@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math"
 
+	"github.com/knd/kndchain/pkg/calculating"
+
 	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/crypto"
 
@@ -17,11 +19,13 @@ type Service interface {
 	ContainsValidTransactions(bc *Blockchain) (bool, error)
 }
 
-type service struct{}
+type service struct {
+	calculator calculating.Service
+}
 
 // NewService creates a validating service with necessary dependencies
-func NewService() Service {
-	return &service{}
+func NewService(c calculating.Service) Service {
+	return &service{c}
 }
 
 // IsValidChain returns true if list of blocks compose valid blockchain
@@ -128,6 +132,7 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 		return false, errors.New("Empty blockchain")
 	}
 
+	cBlockchain := toCalculatingBlockchain(bc)
 	for i := 0; i < len(bc.Chain); i++ {
 		block := bc.Chain[i]
 		rewardTransactionCount := 0
@@ -147,6 +152,11 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 				if valid, err := IsValidTransaction(transaction); !valid && err != nil {
 					return valid, ErrInvalidMinerRewardAmount
 				}
+
+				senderBalance := s.calculator.Balance(transaction.Input.Address, cBlockchain)
+				if transaction.Input.Amount != senderBalance {
+					return false, ErrInvalidInputBalance
+				}
 			}
 		}
 	}
@@ -159,4 +169,39 @@ func getFirstValueOfMap(m map[string]uint64) uint64 {
 	}
 
 	return 0
+}
+
+func toCalculatingBlockchain(bc *Blockchain) *calculating.Blockchain {
+	if bc == nil {
+		return nil
+	}
+
+	result := &calculating.Blockchain{}
+	for _, block := range bc.Chain {
+		cTransactions := []calculating.Transaction{}
+		for _, transaction := range block.Data {
+			cTx := calculating.Transaction{
+				ID:     transaction.ID,
+				Output: transaction.Output,
+				Input: calculating.Input{
+					Timestamp: transaction.Input.Timestamp,
+					Amount:    transaction.Input.Amount,
+					Address:   transaction.Input.Address,
+					Signature: transaction.Input.Signature,
+				},
+			}
+			cTransactions = append(cTransactions, cTx)
+		}
+		cBlock := calculating.Block{
+			Timestamp:  block.Timestamp,
+			LastHash:   block.LastHash,
+			Hash:       block.Hash,
+			Data:       cTransactions,
+			Nonce:      block.Nonce,
+			Difficulty: block.Difficulty,
+		}
+		result.Chain = append(result.Chain, cBlock)
+	}
+
+	return result
 }
