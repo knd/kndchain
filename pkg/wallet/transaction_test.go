@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knd/kndchain/pkg/config"
+
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
@@ -237,6 +239,6 @@ func TestCreateRewardTransaction(t *testing.T) {
 		beforeEach()
 
 		// perform test & verification
-		assert.Equal(MiningReward, rewardTransaction.GetOutput()[minerWallet.PubKeyHex()])
+		assert.Equal(config.MiningReward, rewardTransaction.GetOutput()[minerWallet.PubKeyHex()])
 	})
 }

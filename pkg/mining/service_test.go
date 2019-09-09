@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -27,8 +28,8 @@ func TestCreateGenesisBlock(t *testing.T) {
 		// test verification
 		assert.Nil(err)
 		assert.NotEmpty(genesisBlock.Timestamp)
-		assert.Equal(*genesisBlock.LastHash, DefaultGenesisLastHash)
-		assert.Equal(*genesisBlock.Hash, DefaultGenesisHash)
+		assert.Equal(*genesisBlock.LastHash, config.DefaultGenesisLastHash)
+		assert.Equal(*genesisBlock.Hash, config.DefaultGenesisHash)
 		assert.Empty(genesisBlock.Data)
 	})
 

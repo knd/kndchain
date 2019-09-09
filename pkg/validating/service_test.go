@@ -258,8 +258,12 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
 		bc.Chain = append(bc.Chain, block)
 
-		// perform test & verification
-		assert.True(validator.ContainsValidTransactions(bc))
+		// perform test
+		valid, err := validator.ContainsValidTransactions(bc)
+
+		// test verification
+		assert.Nil(err)
+		assert.True(valid)
 	})
 
 	t.Run("returns false if block has more than 1 reward transaction", func(t *testing.T) {
@@ -290,7 +294,11 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 		bc.Chain = append(bc.Chain, block)
 
 		// perform test & verification
-		assert.False(validator.ContainsValidTransactions(bc))
+		valid, err := validator.ContainsValidTransactions(bc)
+
+		// test verification
+		assert.Equal(ErrMinerRewardExceedsLimit, err)
+		assert.False(valid)
 	})
 
 	t.Run("returns false if a transaction has malformed output", func(t *testing.T) {
@@ -319,8 +327,12 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
 		bc.Chain = append(bc.Chain, block)
 
-		// perform test & verification
-		assert.False(validator.ContainsValidTransactions(bc))
+		// perform test
+		valid, err := validator.ContainsValidTransactions(bc)
+
+		// test verification
+		assert.Equal(ErrInvalidMinerRewardAmount, err)
+		assert.False(valid)
 	})
 
 	t.Run("returns false if a reward transaction has malformed output", func(t *testing.T) {
@@ -349,8 +361,12 @@ func TestService_ContainsValidTransactions(t *testing.T) {
 		block = createBlock(blockTs, &lastHash, &hash, data, nonce, difficulty)
 		bc.Chain = append(bc.Chain, block)
 
-		// perform test & verification
-		assert.False(validator.ContainsValidTransactions(bc))
+		// perform test
+		valid, err := validator.ContainsValidTransactions(bc)
+
+		// test verification
+		assert.Equal(ErrInvalidMinerRewardAmount, err)
+		assert.False(valid)
 	})
 
 	/*

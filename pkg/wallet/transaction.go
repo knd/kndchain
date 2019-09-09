@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/knd/kndchain/pkg/config"
+
 	"github.com/google/uuid"
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/hashing"
@@ -148,18 +150,10 @@ func IsValidTransaction(tx Transaction) (bool, error) {
 	return true, nil
 }
 
-const (
-	// RewardTxInputAddress is the special address in the reward tx input to miner
-	RewardTxInputAddress string = "MINER_REWARD"
-
-	// MiningReward is the amount rewarded to miner who seals block
-	MiningReward uint64 = 5
-)
-
 // GetRewardTransactionInput returns the special input in the reward tx to miner
 func GetRewardTransactionInput() Input {
 	return Input{
-		Address: RewardTxInputAddress,
+		Address: config.RewardTxInputAddress,
 	}
 }
 
@@ -169,7 +163,7 @@ func CreateRewardTransaction(mw Wallet) (Transaction, error) {
 	tx.Input = GetRewardTransactionInput()
 
 	o := Output{}
-	o[mw.PubKeyHex()] = MiningReward
+	o[mw.PubKeyHex()] = config.MiningReward
 	tx.Output = o
 
 	return tx, nil

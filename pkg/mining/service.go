@@ -8,28 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/validating"
-)
-
-const (
-	// MineRate (1000 milliseconds) adjusts the difficulty of mining operation
-	MineRate int = 1000
-)
-
-const (
-	// DefaultGenesisLastHash is default last genesis block hash if not given from genesis config
-	DefaultGenesisLastHash = "0x000"
-
-	// DefaultGenesisHash is default genesis hash if not given from genesis config
-	DefaultGenesisHash = "0x000"
-
-	// DefaultGenesisDifficulty is default difficulty in genesis block
-	DefaultGenesisDifficulty uint32 = 3
-
-	// DefaultGenesisNonce is default nonce in genesis block
-	DefaultGenesisNonce uint32 = 0
 )
 
 // ErrMissingLastBlock is used when new block is not provided last block hash
@@ -71,28 +53,28 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 	// validations
 	var lastBlockHash string
 	if genesisConfig == nil || genesisConfig.LastHash == nil {
-		lastBlockHash = DefaultGenesisLastHash
+		lastBlockHash = config.DefaultGenesisLastHash
 	} else {
 		lastBlockHash = *genesisConfig.LastHash
 	}
 
 	var blockHash string
 	if genesisConfig == nil || genesisConfig.Hash == nil {
-		blockHash = DefaultGenesisHash
+		blockHash = config.DefaultGenesisHash
 	} else {
 		blockHash = *genesisConfig.Hash
 	}
 
 	var blockDifficulty uint32
 	if genesisConfig == nil {
-		blockDifficulty = DefaultGenesisDifficulty
+		blockDifficulty = config.DefaultGenesisDifficulty
 	} else {
 		blockDifficulty = genesisConfig.Difficulty
 	}
 
 	var blockNonce uint32
 	if genesisConfig == nil {
-		blockNonce = DefaultGenesisNonce
+		blockNonce = config.DefaultGenesisNonce
 	} else {
 		blockNonce = genesisConfig.Nonce
 	}
@@ -106,9 +88,9 @@ func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
 }
 
 func adjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
-	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(MineRate) * time.Millisecond) {
+	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(config.MineRate) * time.Millisecond) {
 		return lastBlock.Difficulty + 1
-	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(MineRate) * time.Millisecond) {
+	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(config.MineRate) * time.Millisecond) {
 		if lastBlock.Difficulty <= 1 {
 			return 1
 		}
