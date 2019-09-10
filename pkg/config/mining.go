@@ -1,8 +1,8 @@
 package config
 
 const (
-	// MineRate (1000 milliseconds) adjusts the difficulty of mining operation
-	MineRate int = 1000
+	// MineRate (10 minutes) adjusts the difficulty of mining operation
+	MineRate int = 1000 * 60 * 10
 )
 
 const (
