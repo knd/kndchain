@@ -144,7 +144,8 @@ func mineTransactions(miner miner.Miner, lister listing.Service) func(w http.Res
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		err := miner.Mine()
 		if err != nil {
-			log.Fatal("Failed to mine")
+			log.Printf("Failed to mine, %v", err)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
