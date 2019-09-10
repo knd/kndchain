@@ -52,13 +52,13 @@ func main() {
 		storage := memory.NewRepository()
 
 		lister = listing.NewService(storage)
-		validator = validating.NewService(lister, calculating.NewService())
-		miner = mining.NewService(storage, lister, validator, nil)
+		validator = validating.NewService(lister, calculating.NewService(1000), "MINER_REWARD", 5)
+		miner = mining.NewService(storage, lister, validator, 600000)
 	}
 
 	fmt.Println("Staring now")
 
-	genesisBlock, _ := mining.CreateGenesisBlock(nil)
+	genesisBlock, _ := mining.CreateGenesisBlock("0x000", "0x000", 15, 0)
 	miner.AddBlock(genesisBlock)
 
 	var durations []float64

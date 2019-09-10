@@ -43,7 +43,7 @@ const (
 const BeaconNodePort int = 3000
 
 type mine struct {
-	MineRate          int    `json:"mineRate"`
+	MineRate          int64  `json:"mineRate"`
 	GenesisLastHash   string `json:"genesisLastHash"`
 	GenesisHash       string `json:"genesisHash"`
 	GenesisDifficulty uint32 `json:"genesisDifficulty"`
@@ -101,12 +101,12 @@ func main() {
 		r := memory.NewRepository()
 
 		listingService = listing.NewService(r)
-		calculatingService = calculating.NewService()
-		validatingService = validating.NewService(listingService, calculatingService)
-		miningService = mining.NewService(r, listingService, validatingService, nil)
+		calculatingService = calculating.NewService(Config.Wallet.InitialBalance)
+		validatingService = validating.NewService(listingService, calculatingService, Config.Transaction.RewardTxInputAddress, Config.Transaction.MiningReward)
+		miningService = mining.NewService(r, listingService, validatingService, Config.Mining.MineRate)
 	}
 
-	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService)
+	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance)
 	transactionPool := wallet.NewTransactionPool(listingService)
 
 	switch networkingType {
@@ -122,7 +122,7 @@ func main() {
 		}
 	}
 
-	miner := miner.NewMiner(miningService, listingService, transactionPool, minerWallet, p2pComm)
+	miner := miner.NewMiner(miningService, listingService, transactionPool, minerWallet, p2pComm, Config.Transaction.RewardTxInputAddress, Config.Transaction.MiningReward)
 	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner, calculatingService)
 
 	var port int
@@ -130,7 +130,7 @@ func main() {
 		port = BeaconNodePort
 
 		// Add genesis block then broadcast to peers
-		genesisBlock, _ := mining.CreateGenesisBlock(nil)
+		genesisBlock, _ := mining.CreateGenesisBlock(Config.Mining.GenesisLastHash, Config.Mining.GenesisHash, Config.Mining.GenesisDifficulty, Config.Mining.GenesisNonce)
 		miningService.AddBlock(genesisBlock)
 		p2pComm.BroadcastBlockchain(listingService.GetBlockchain())
 

@@ -15,21 +15,23 @@ type Miner interface {
 }
 
 type miner struct {
-	service         mining.Service
-	lister          listing.Service
-	transactionPool wallet.TransactionPool
-	wal             wallet.Wallet
-	comm            pubsub.Service
+	service              mining.Service
+	lister               listing.Service
+	transactionPool      wallet.TransactionPool
+	wal                  wallet.Wallet
+	comm                 pubsub.Service
+	rewardTxInputAddress string
+	rewardAmount         uint64
 }
 
 // NewMiner creates a miner with necessary dependencies
-func NewMiner(s mining.Service, l listing.Service, p wallet.TransactionPool, w wallet.Wallet, c pubsub.Service) Miner {
-	return &miner{s, l, p, w, c}
+func NewMiner(s mining.Service, l listing.Service, p wallet.TransactionPool, w wallet.Wallet, c pubsub.Service, rewardTxInputAddress string, rewardAmount uint64) Miner {
+	return &miner{s, l, p, w, c, rewardTxInputAddress, rewardAmount}
 }
 
 func (m *miner) Mine() error {
 	validTransactions := m.transactionPool.ValidTransactions()
-	rewardTransaction, _ := wallet.CreateRewardTransaction(m.wal)
+	rewardTransaction, _ := wallet.CreateRewardTransaction(m.wal, m.rewardTxInputAddress, m.rewardAmount)
 
 	validTransactions = append(validTransactions, rewardTransaction)
 
