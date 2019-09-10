@@ -20,7 +20,7 @@ func (b SortByteArrays) Less(i, j int) bool {
 	case 0, 1:
 		return false
 	default:
-		log.Panic("not fail-able with `bytes.Comparable` bounded [-1, 1].")
+		log.Println("not fail-able with `bytes.Comparable` bounded [-1, 1].")
 		return false
 	}
 }
