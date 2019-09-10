@@ -171,7 +171,7 @@ func (s *service) ReplaceChain(newChain *Blockchain) error {
 		return ErrInvalidChain
 	}
 	if valid, err := s.validating.ContainsValidTransactions(vChain); !valid || err != nil {
-		log.Printf("Failed to replace chain %v", err)
+		log.Printf("MiningService#ReplaceChain: Failed to replace chain %v", err)
 		return ErrInvalidTransactions
 	}
 

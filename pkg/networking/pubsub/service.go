@@ -50,7 +50,8 @@ func NewService(l listing.Service, m mining.Service, p wallet.TransactionPool) S
 func (s *service) Connect() error {
 	conn, err := redis.Dial("tcp", PortPubSub)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("PubSubService#Connect: Failed to dial tcp connection, %v", err)
+		return err
 	}
 
 	s.psc = &redis.PubSubConn{Conn: conn}
@@ -67,18 +68,18 @@ func (s *service) Disconnect() error {
 func (s *service) BroadcastBlockchain(bc *listing.Blockchain) error {
 	b, err := json.Marshal(*bc)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("PubSubService#BroadcastBlockchain: Failed to json marshal blockchain, %v", err)
+		return err
 	}
 
 	conn, err := redis.Dial("tcp", PortPubSub)
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer conn.Close()
+	if err != nil {
+		log.Printf("PubSubService#BroadcastBlockchain: Failed to dial tcp connection, %v", err)
+		return err
+	}
 
-	// TODO: temporarily unsubscribe
 	_, err = conn.Do("PUBLISH", ChannelPubSub, string(b[:]))
-	// TODO: subscribe back to channel
 
 	return err
 }
@@ -91,10 +92,11 @@ func (s *service) BroadcastTransaction(tx wallet.Transaction) error {
 	}
 
 	conn, err := redis.Dial("tcp", PortPubSub)
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer conn.Close()
+	if err != nil {
+		log.Printf("PubSubService#BroadcastTransaction: Failed to dial tcp connection, %v", err)
+		return err
+	}
 
 	_, err = conn.Do("PUBLISH", ChannelTransactions, string(b[:]))
 
@@ -105,12 +107,14 @@ func (s *service) BroadcastTransaction(tx wallet.Transaction) error {
 func (s *service) SubscribePeers() error {
 	err := s.psc.Subscribe(ChannelPubSub)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", ChannelPubSub, err)
+		return err
 	}
 
 	err = s.psc.Subscribe(ChannelTransactions)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", ChannelTransactions, err)
+		return err
 	}
 
 	go func(conn redis.Conn) {
@@ -124,20 +128,19 @@ func (s *service) SubscribePeers() error {
 					var err error
 					err = json.Unmarshal(v.Data, &bc)
 					if err != nil {
-						log.Println(err)
-						log.Println("Coudn't unmarshall incoming blockchain")
+						log.Printf("PubSubService#SubscribePeers: Coudn't unmarshall incoming blockchain, %v", err)
 						continue
 					}
 
 					err = s.m.ReplaceChain(&bc)
 					if err != nil {
-						log.Println(err)
+						log.Printf("PubSubService#SubscribePeers: Failed to replace blockchain, %v", err)
 						continue
 					}
 
 					err = s.p.ClearBlockTransactions()
 					if err != nil {
-						log.Println(err)
+						log.Printf("PubSubService#SubscribePeers: Failed to clear block transactions in transaction pool, %v", err)
 						continue
 					}
 
@@ -149,8 +152,7 @@ func (s *service) SubscribePeers() error {
 					var err error
 					err = json.Unmarshal(v.Data, &tx)
 					if err != nil {
-						log.Println(err)
-						log.Println("Couldn't unmarshall incoming transaction")
+						log.Printf("PubSubService#SubscribePeers: Couldn't unmarshall incoming transaction, %v", err)
 						continue
 					}
 					s.p.Add(&tx)
