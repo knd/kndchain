@@ -5,14 +5,11 @@ import (
 	"errors"
 	"math"
 
-	"github.com/knd/kndchain/pkg/listing"
-
 	"github.com/knd/kndchain/pkg/calculating"
-
 	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/crypto"
-
 	"github.com/knd/kndchain/pkg/hashing"
+	"github.com/knd/kndchain/pkg/listing"
 )
 
 // Service provides blockchain validating operations
