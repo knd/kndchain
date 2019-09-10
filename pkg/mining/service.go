@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/validating"
@@ -45,56 +44,25 @@ type service struct {
 	blockchain Repository
 	listing    listing.Service
 	validating validating.Service
+	MineRate   int64
 }
 
 // NewService creates a creating service with necessary dependencies
-func NewService(r Repository, l listing.Service, v validating.Service, c *GenesisConfig) Service {
-	return &service{r, l, v}
+func NewService(r Repository, l listing.Service, v validating.Service, mineRate int64) Service {
+	return &service{r, l, v, mineRate}
 }
 
 // CreateGenesisBlock returns the genesis block created from config
-func CreateGenesisBlock(genesisConfig *GenesisConfig) (*Block, error) {
-	// validations
-	var lastBlockHash string
-	if genesisConfig == nil || genesisConfig.LastHash == nil {
-		lastBlockHash = config.DefaultGenesisLastHash
-	} else {
-		lastBlockHash = *genesisConfig.LastHash
-	}
-
-	var blockHash string
-	if genesisConfig == nil || genesisConfig.Hash == nil {
-		blockHash = config.DefaultGenesisHash
-	} else {
-		blockHash = *genesisConfig.Hash
-	}
-
-	var blockDifficulty uint32
-	if genesisConfig == nil {
-		blockDifficulty = config.DefaultGenesisDifficulty
-	} else {
-		blockDifficulty = genesisConfig.Difficulty
-	}
-
-	var blockNonce uint32
-	if genesisConfig == nil {
-		blockNonce = config.DefaultGenesisNonce
-	} else {
-		blockNonce = genesisConfig.Nonce
-	}
-
+func CreateGenesisBlock(genesisLastHash string, genesisHash string, genesisDifficulty uint32, genesisNonce uint32) (*Block, error) {
 	data := []Transaction{}
-	if genesisConfig != nil && genesisConfig.Data != nil {
-		data = *genesisConfig.Data
-	}
 
-	return yieldBlock(time.Now(), &lastBlockHash, &blockHash, data, blockNonce, blockDifficulty), nil
+	return yieldBlock(time.Now(), &genesisLastHash, &genesisHash, data, genesisNonce, genesisDifficulty), nil
 }
 
-func adjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time) uint32 {
-	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(config.MineRate) * time.Millisecond) {
+func adjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time, mineRate int64) uint32 {
+	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(mineRate) * time.Millisecond) {
 		return lastBlock.Difficulty + 1
-	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(config.MineRate) * time.Millisecond) {
+	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(mineRate) * time.Millisecond) {
 		if lastBlock.Difficulty <= 1 {
 			return 1
 		}
@@ -118,7 +86,7 @@ func (s *service) MineNewBlock(lastBlock *Block, data []Transaction) (*Block, er
 	for {
 		nonce++
 		timestamp = time.Now()
-		difficulty = adjustBlockDifficulty(*lastBlock, timestamp)
+		difficulty = adjustBlockDifficulty(*lastBlock, timestamp, s.MineRate)
 		hash = hashing.SHA256Hash(timestamp.Unix(), *lastBlock.Hash, data, nonce, difficulty)
 		if hexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break

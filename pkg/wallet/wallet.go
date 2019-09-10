@@ -6,8 +6,6 @@ import (
 	"log"
 
 	"github.com/knd/kndchain/pkg/calculating"
-	"github.com/knd/kndchain/pkg/config"
-
 	"github.com/knd/kndchain/pkg/listing"
 )
 
@@ -39,12 +37,12 @@ type wallet struct {
 }
 
 // NewWallet creates a wallet with necessary dependencies
-func NewWallet(kpg KeyPairGenerator, c calculating.Service) Wallet {
+func NewWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint64) Wallet {
 	pubKey, privKey := kpg.Generate()
 
 	w := &wallet{
 		gen:        kpg,
-		balance:    config.InitialBalance,
+		balance:    initialBalance,
 		publicKey:  pubKey,
 		privateKey: privKey,
 		calculator: c,

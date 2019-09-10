@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"github.com/knd/kndchain/pkg/calculating"
-	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/knd/kndchain/pkg/listing"
@@ -19,13 +18,15 @@ type Service interface {
 }
 
 type service struct {
-	lister     listing.Service
-	calculator calculating.Service
+	lister               listing.Service
+	calculator           calculating.Service
+	RewardTxInputAddress string
+	MiningReward         uint64
 }
 
 // NewService creates a validating service with necessary dependencies
-func NewService(l listing.Service, c calculating.Service) Service {
-	return &service{l, c}
+func NewService(l listing.Service, c calculating.Service, rewardInputAddress string, reward uint64) Service {
+	return &service{l, c, rewardInputAddress, reward}
 }
 
 // IsValidChain returns true if list of blocks compose valid blockchain
@@ -142,14 +143,14 @@ func (s *service) ContainsValidTransactions(bc *Blockchain) (bool, error) {
 		senderTransactions := map[string]bool{}
 
 		for _, transaction := range block.Data {
-			if transaction.Input.Address == config.RewardTxInputAddress {
+			if transaction.Input.Address == s.RewardTxInputAddress {
 				rewardTransactionCount++
 
 				if rewardTransactionCount > 1 {
 					return false, ErrMinerRewardExceedsLimit
 				}
 
-				if len(transaction.Output) > 1 || getFirstValueOfMap(transaction.Output) != config.MiningReward {
+				if len(transaction.Output) > 1 || getFirstValueOfMap(transaction.Output) != s.MiningReward {
 					return false, ErrInvalidMinerRewardAmount
 				}
 			} else {

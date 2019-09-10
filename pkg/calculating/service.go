@@ -2,8 +2,6 @@ package calculating
 
 import (
 	"log"
-
-	"github.com/knd/kndchain/pkg/config"
 )
 
 // Service provides access to calculating operations
@@ -12,11 +10,13 @@ type Service interface {
 	BalanceByBlockIndex(address string, bc *Blockchain, index int) uint64
 }
 
-type service struct{}
+type service struct {
+	InitialBalance uint64
+}
 
 // NewService creates a calculating service
-func NewService() Service {
-	return &service{}
+func NewService(initialBalance uint64) Service {
+	return &service{initialBalance}
 }
 
 // Balance returns the current balance of the address given blockchain history
@@ -28,7 +28,7 @@ func (s *service) BalanceByBlockIndex(address string, bc *Blockchain, index int)
 	var balance uint64
 	if bc == nil || len(bc.Chain) == 0 {
 		log.Println("BalanceByBlockIndex: blockchain is nil or chain length is 0")
-		return config.InitialBalance
+		return s.InitialBalance
 	}
 	if index >= len(bc.Chain) {
 		log.Printf("BalanceByBlockIndex: Index=%d is greater than chain length=%d, setting index to chain length", index, len(bc.Chain))
@@ -64,5 +64,5 @@ func (s *service) BalanceByBlockIndex(address string, bc *Blockchain, index int)
 		return balance
 	}
 
-	return config.InitialBalance + balance
+	return s.InitialBalance + balance
 }

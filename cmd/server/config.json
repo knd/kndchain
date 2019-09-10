@@ -1,0 +1,21 @@
+{
+  "mining": {
+    "mineRate": 600000,
+    "genesisLastHash": "0x000",
+    "genesisHash": "0x000",
+    "genesisDifficulty": 15,
+    "genesisNonce": 0
+  },
+  "syncing": {
+    "channelPubSub": "kndchain",
+    "channelTransactions": "kndtransactions",
+    "portPubSub": ":6379"
+  },
+  "transaction": {
+    "rewardTxInputAddress": "MINER_REWARD",
+    "miningReward": 5
+  },
+  "wallet": {
+    "initialBalance": 1000
+  }
+}

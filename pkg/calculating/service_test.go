@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/knd/kndchain/pkg/config"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,9 +11,10 @@ func TestService_Balance(t *testing.T) {
 	assert := assert.New(t)
 	address := "04c1bc492c403e1484c81316c7ac789353beb57e620a4c15536fcc668830b79dbcdca2a6cf4e01a2be88f9e617016d06c89f8a45a9e1550b29f6d182b9308113fa"
 	var service Service
+	var initialBalance uint64 = 1000
 
 	beforeEach := func() {
-		service = NewService()
+		service = NewService(initialBalance)
 	}
 
 	createTransaction := func(id string, output map[string]uint64, timestamp int64, amount uint64, address string, signature string) Transaction {
@@ -39,7 +38,7 @@ func TestService_Balance(t *testing.T) {
 		receivedBalance := service.Balance(address, blockchain)
 
 		// test verification
-		assert.Equal(config.InitialBalance, receivedBalance)
+		assert.Equal(initialBalance, receivedBalance)
 	})
 
 	t.Run("updates wallet balance when there are outputs for wallet", func(t *testing.T) {

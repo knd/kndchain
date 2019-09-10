@@ -1,11 +1,9 @@
 package mining
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/knd/kndchain/pkg/config"
 	"github.com/knd/kndchain/pkg/hashing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,41 +13,15 @@ func TestCreateGenesisBlock(t *testing.T) {
 	assert := assert.New(t)
 
 	t.Run("creates default genesis block", func(t *testing.T) {
-		jsonData := "{}"
-
-		var genesisConfig GenesisConfig
-		if err := json.Unmarshal([]byte(jsonData), &genesisConfig); err != nil {
-			t.FailNow()
-		}
-
 		// perform test
-		genesisBlock, err := CreateGenesisBlock(&genesisConfig)
+		genesisBlock, err := CreateGenesisBlock("0x000", "0x000", 15, 0)
 
 		// test verification
 		assert.Nil(err)
 		assert.NotEmpty(genesisBlock.Timestamp)
-		assert.Equal(*genesisBlock.LastHash, config.DefaultGenesisLastHash)
-		assert.Equal(*genesisBlock.Hash, config.DefaultGenesisHash)
+		assert.Equal("0x000", *genesisBlock.LastHash)
+		assert.Equal("0x000", *genesisBlock.Hash)
 		assert.Empty(genesisBlock.Data)
-	})
-
-	t.Run("creates genesis block with given config", func(t *testing.T) {
-		jsonData := `{ "lastHash": "0x123", "hash": "0x456", "data": [{ "id": "tx1" }, { "id": "tx2" }] }`
-
-		var genesisConfig GenesisConfig
-		if err := json.Unmarshal([]byte(jsonData), &genesisConfig); err != nil {
-			t.FailNow()
-		}
-
-		// perform test
-		genesisBlock, err := CreateGenesisBlock(&genesisConfig)
-
-		// test verification
-		assert.Nil(err)
-		assert.NotEmpty(genesisBlock.Timestamp)
-		assert.Equal("0x123", *genesisBlock.LastHash)
-		assert.Equal("0x456", *genesisBlock.Hash)
-		assert.Equal([]Transaction{Transaction{ID: "tx1"}, Transaction{ID: "tx2"}}, genesisBlock.Data)
 	})
 }
 
@@ -69,7 +41,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 999)
 
 		// perform test
-		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
 
 		// test verification
 		assert.Equal(uint32(3), difficulty)
@@ -79,7 +51,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 700000)
 
 		// perform test
-		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
 
 		// test verficiation
 		assert.Equal(uint32(1), difficulty)
@@ -89,7 +61,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 600000)
 
 		// perform test
-		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
 
 		// test verficiation
 		assert.Equal(uint32(2), difficulty)
@@ -100,7 +72,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
 
 		// perform test
-		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
+		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
 
 		// test verficiation
 		assert.Equal(uint32(1), difficulty)
@@ -124,7 +96,7 @@ func TestService(t *testing.T) {
 		mockedListing = new(MockedListing)
 		mockedValidating = new(MockedValidating)
 		mockedValidating.On("ContainsValidTransactions", mock.Anything).Return(true, nil)
-		miningService = NewService(mockedRepository, mockedListing, mockedValidating, nil)
+		miningService = NewService(mockedRepository, mockedListing, mockedValidating, 600000)
 	}
 
 	t.Run("mines new block", func(t *testing.T) {

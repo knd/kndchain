@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -40,7 +42,51 @@ const (
 // BeaconNodePort is port on which the beacon node is running
 const BeaconNodePort int = 3000
 
+type mine struct {
+	MineRate          int    `json:"mineRate"`
+	GenesisLastHash   string `json:"genesisLastHash"`
+	GenesisHash       string `json:"genesisHash"`
+	GenesisDifficulty uint32 `json:"genesisDifficulty"`
+	GenesisNonce      uint32 `json:"genesisNonce"`
+}
+
+type sync struct {
+	ChannelPubSub       string `json:"channelPubSub"`
+	ChannelTransactions string `json:"channelTransactions"`
+	PortPubSub          string `json:"portPubSub"`
+}
+
+type transaction struct {
+	RewardTxInputAddress string `json:"rewardTxInputAddress"`
+	MiningReward         uint64 `json:"miningReward"`
+}
+
+type wal struct {
+	InitialBalance uint64 `json:"initialBalance"`
+}
+
+// Config feeds config from json
+var Config struct {
+	Mining      mine        `json:"mining"`
+	Syncing     sync        `json:"syncing"`
+	Transaction transaction `json:"transaction"`
+	Wallet      wal         `json:"wallet"`
+}
+
+func initConfig() {
+	configFile, err := os.Open("./cmd/server/config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer configFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(configFile)
+
+	json.Unmarshal(byteValue, &Config)
+}
+
 func main() {
+	initConfig()
 	storageType := Memory    // hard-coded
 	networkingType := PubSub // hard-coded
 

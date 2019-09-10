@@ -6,8 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/knd/kndchain/pkg/config"
-
 	"github.com/google/uuid"
 	"github.com/knd/kndchain/pkg/hashing"
 )
@@ -105,19 +103,19 @@ func (t *Tx) generateInput(w Wallet, op Output) Input {
 }
 
 // GetRewardTransactionInput returns the special input in the reward tx to miner
-func GetRewardTransactionInput() Input {
+func GetRewardTransactionInput(rewardTxInputAddress string) Input {
 	return Input{
-		Address: config.RewardTxInputAddress,
+		Address: rewardTxInputAddress,
 	}
 }
 
 // CreateRewardTransaction creates a reward transaction to the miner to seals block
-func CreateRewardTransaction(mw Wallet) (Transaction, error) {
+func CreateRewardTransaction(mw Wallet, rewardTxInputAddress string, miningReward uint64) (Transaction, error) {
 	tx := &Tx{ID: uuid.New().String()}
-	tx.Input = GetRewardTransactionInput()
+	tx.Input = GetRewardTransactionInput(rewardTxInputAddress)
 
 	o := Output{}
-	o[mw.PubKeyHex()] = config.MiningReward
+	o[mw.PubKeyHex()] = miningReward
 	tx.Output = o
 
 	return tx, nil
