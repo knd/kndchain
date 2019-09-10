@@ -123,6 +123,7 @@ func TestService(t *testing.T) {
 		mockedRepository = new(MockedRepository)
 		mockedListing = new(MockedListing)
 		mockedValidating = new(MockedValidating)
+		mockedValidating.On("ContainsValidTransactions", mock.Anything).Return(true, nil)
 		miningService = NewService(mockedRepository, mockedListing, mockedValidating, nil)
 	}
 
