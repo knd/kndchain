@@ -76,7 +76,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	})
 
 	t.Run("lowers block difficulty if mining rate is slower than threshold MINE_RATE milliseconds", func(t *testing.T) {
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 700000)
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
@@ -86,7 +86,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	})
 
 	t.Run("lowers block difficulty if mining rate is equal to threshold MINE_RATE milliseconds", func(t *testing.T) {
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1000)
+		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 600000)
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp)
