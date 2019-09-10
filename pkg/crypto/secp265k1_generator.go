@@ -12,8 +12,7 @@ import (
 )
 
 // Secp256k1Generator provides secp256k1 operations
-type Secp256k1Generator struct {
-}
+type Secp256k1Generator struct{}
 
 // NewSecp256k1Generator creates a secp256k1 generator
 func NewSecp256k1Generator() *Secp256k1Generator {
@@ -24,7 +23,7 @@ func NewSecp256k1Generator() *Secp256k1Generator {
 func (s *Secp256k1Generator) Generate() (pubKey, privKey []byte) {
 	key, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Secp256k1Generator#Generate: Failed to generate key", err)
 	}
 
 	pubKey = elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
@@ -39,11 +38,13 @@ func (s *Secp256k1Generator) Generate() (pubKey, privKey []byte) {
 // Verify checks that the given pubKey created signature over msg
 func (s *Secp256k1Generator) Verify(pubKey, msg, signature []byte) bool {
 	if len(signature) < 64 {
+		log.Printf("Secp256k1Generator#Verify: Signature length=%d is less 64", len(signature))
 		return false
 	}
 
 	msgHash, err := sha256Hash(msg)
 	if err != nil {
+		log.Printf("Secp256k1Generator#Verify: Error getting SHA256 hash of message")
 		return false
 	}
 
@@ -55,6 +56,7 @@ func (s *Secp256k1Generator) Verify(pubKey, msg, signature []byte) bool {
 func (s *Secp256k1Generator) Sign(msg, privKey []byte) ([]byte, error) {
 	msgHash, err := sha256Hash(msg)
 	if err != nil {
+		log.Printf("Secp256k1Generator#Sign: Error getting SHA256 hash of message")
 		return nil, err
 	}
 
