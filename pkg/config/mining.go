@@ -13,7 +13,7 @@ const (
 	DefaultGenesisHash string = "0x000"
 
 	// DefaultGenesisDifficulty is default difficulty in genesis block
-	DefaultGenesisDifficulty uint32 = 3
+	DefaultGenesisDifficulty uint32 = 15
 
 	// DefaultGenesisNonce is default nonce in genesis block
 	DefaultGenesisNonce uint32 = 0
