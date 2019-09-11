@@ -23,7 +23,7 @@ type LevelDB struct {
 	transactionDB         *leveldb.DB
 	blockDB               *leveldb.DB
 	chainDB               *leveldb.DB
-	lastBlockHash         string
+	currentBlockHash      string
 	blockCount            uint32
 }
 
@@ -36,38 +36,41 @@ func NewRepository(pathToDataDir string) *LevelDB {
 	}
 
 	if dirExisted, _ := exists(r.PathToTransactionData); !dirExisted {
-		if err := os.Mkdir(r.PathToTransactionData, os.ModeDir); err != nil {
+		if err := os.Mkdir(r.PathToTransactionData, os.ModePerm); err != nil {
+			log.Println(err)
 			log.Fatalf("Failed to create dir=%s", r.PathToTransactionData)
 		}
 	}
 
 	if dirExisted, _ := exists(r.PathToBlockData); !dirExisted {
-		if err := os.Mkdir(r.PathToBlockData, os.ModeDir); err != nil {
+		if err := os.Mkdir(r.PathToBlockData, os.ModePerm); err != nil {
+			log.Println(err)
 			log.Fatalf("Failed to create dir=%s", r.PathToBlockData)
 		}
 	}
 
 	if dirExisted, _ := exists(r.PathToChainData); !dirExisted {
-		if err := os.Mkdir(r.PathToChainData, os.ModeDir); err != nil {
+		if err := os.Mkdir(r.PathToChainData, os.ModePerm); err != nil {
+			log.Println(err)
 			log.Fatalf("Failed to create dir=%s", r.PathToChainData)
 		}
 	}
 
 	transactionDB, err := leveldb.OpenFile(r.PathToTransactionData, nil)
 	if err != nil {
-		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToTransactionData)
+		log.Fatalf("Failed to open leveldb#openfile dir=%s, %v", r.PathToTransactionData, err)
 	}
 	r.transactionDB = transactionDB
 
 	blockDB, err := leveldb.OpenFile(r.PathToBlockData, nil)
 	if err != nil {
-		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToBlockData)
+		log.Fatalf("Failed to open leveldb#openfile dir=%s, %v", r.PathToBlockData, err)
 	}
 	r.blockDB = blockDB
 
 	chainDB, err := leveldb.OpenFile(r.PathToChainData, nil)
 	if err != nil {
-		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToChainData)
+		log.Fatalf("Failed to open leveldb#openfile dir=%s, %v", r.PathToChainData, err)
 	}
 	r.chainDB = chainDB
 
@@ -114,7 +117,7 @@ func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
 		panic(err)
 	}
 	if err := db.blockDB.Put(
-		[]byte(*rBlock.Hash),
+		[]byte(rBlock.Hash),
 		[]byte(blockBytes),
 		nil); err != nil {
 		return ErrPersistBlock
@@ -123,12 +126,12 @@ func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
 	// add to chain db
 	if err := db.chainDB.Put(
 		[]byte(fmt.Sprintf("%v", rBlock.Timestamp)),
-		[]byte(*rBlock.Hash),
+		[]byte(rBlock.Hash),
 		nil); err != nil {
 		return ErrPersistBlockchain
 	}
 
-	db.lastBlockHash = *rBlock.LastHash
+	db.currentBlockHash = rBlock.Hash
 	db.blockCount++
 
 	return nil
@@ -150,8 +153,8 @@ func toRepoBlock(miningBlock *mining.Block) *Block {
 	}
 	return &Block{
 		Timestamp:  miningBlock.Timestamp.Unix(),
-		LastHash:   miningBlock.LastHash,
-		Hash:       miningBlock.Hash,
+		LastHash:   *miningBlock.LastHash,
+		Hash:       *miningBlock.Hash,
 		Nonce:      miningBlock.Nonce,
 		Difficulty: miningBlock.Difficulty,
 		Data:       transactions,
@@ -179,28 +182,28 @@ func (db *LevelDB) GetBlockCount() uint32 {
 
 // GetLastBlock returns the last block in blockchain
 func (db *LevelDB) GetLastBlock() listing.Block {
-	if db.lastBlockHash != "" {
-		lBlock := db.GetBlockByHash(db.lastBlockHash)
+	if db.currentBlockHash != "" {
+		lBlock := db.GetBlockByHash(db.currentBlockHash)
 		if lBlock == nil {
-			panic("No last block found by lasBlockHash")
+			panic("No last block found by currentBlockHash")
 		}
 		return *lBlock
 	}
 
 	iter := db.chainDB.NewIterator(nil, nil)
-	var lastBlockHash string
+	var currentBlockHash string
 	var lastBlockHashBytes []byte
 	for iter.Next() {
 		lastBlockHashBytes = iter.Value()
-		lastBlockHash = string(lastBlockHashBytes[:])
+		currentBlockHash = string(lastBlockHashBytes[:])
 	}
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
 		panic(err)
 	}
-	db.lastBlockHash = lastBlockHash
-	lBlock := db.GetBlockByHash(db.lastBlockHash)
+	db.currentBlockHash = currentBlockHash
+	lBlock := db.GetBlockByHash(db.currentBlockHash)
 	if lBlock == nil {
 		panic(err)
 	}
@@ -247,8 +250,8 @@ func toListingBlock(b Block) listing.Block {
 
 	return listing.Block{
 		Timestamp:  time.Unix(b.Timestamp, 0),
-		LastHash:   b.LastHash,
-		Hash:       b.Hash,
+		LastHash:   &b.LastHash,
+		Hash:       &b.Hash,
 		Nonce:      b.Nonce,
 		Difficulty: b.Difficulty,
 		Data:       transactions,
@@ -283,7 +286,7 @@ func (db *LevelDB) GetBlockchain() *listing.Blockchain {
 
 // ReplaceChain replace the current blockchain with the newchain
 func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
-	err := db.deleteAllData()
+	err := db.DeleteAllData()
 	if err != nil {
 		return err
 	}
@@ -297,17 +300,18 @@ func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
 		}
 	}
 
-	db.lastBlockHash = *lastMinedBlock.Hash
+	db.currentBlockHash = *lastMinedBlock.Hash
 	db.blockCount = uint32(len(newChain.Chain))
 
 	return nil
 }
 
-func (db *LevelDB) deleteAllData() error {
+// DeleteAllData delete everything
+func (db *LevelDB) DeleteAllData() error {
 	deleteDB(db.transactionDB)
 	deleteDB(db.blockDB)
 	deleteDB(db.chainDB)
-	db.lastBlockHash = ""
+	db.currentBlockHash = ""
 	db.blockCount = 0
 	return nil
 }
