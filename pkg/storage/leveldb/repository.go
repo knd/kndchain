@@ -1,9 +1,12 @@
 package leveldb
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path"
+
+	"github.com/syndtr/goleveldb/leveldb"
 
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
@@ -11,15 +14,26 @@ import (
 
 // LevelDB keeps blockchain in local key-value db
 type LevelDB struct {
-	PathToBlockData string
-	PathToChainData string
+	PathToTransactionData string
+	PathToBlockData       string
+	PathToChainData       string
+	transactionDB         *leveldb.DB
+	blockDB               *leveldb.DB
+	chainDB               *leveldb.DB
 }
 
 // NewRepository creates a repository to interact with LevelDB
 func NewRepository(pathToDataDir string) *LevelDB {
 	r := &LevelDB{
-		PathToBlockData: path.Join(pathToDataDir, "blockDatadir"),
-		PathToChainData: path.Join(pathToDataDir, "chainDatadir"),
+		PathToTransactionData: path.Join(pathToDataDir, "transactionDatadir"),
+		PathToBlockData:       path.Join(pathToDataDir, "blockDatadir"),
+		PathToChainData:       path.Join(pathToDataDir, "chainDatadir"),
+	}
+
+	if dirExisted, _ := exists(r.PathToTransactionData); !dirExisted {
+		if err := os.Mkdir(r.PathToTransactionData, os.ModeDir); err != nil {
+			log.Fatalf("Failed to create dir=%s", r.PathToTransactionData)
+		}
 	}
 
 	if dirExisted, _ := exists(r.PathToBlockData); !dirExisted {
@@ -34,11 +48,36 @@ func NewRepository(pathToDataDir string) *LevelDB {
 		}
 	}
 
+	transactionDB, err := leveldb.OpenFile(r.PathToTransactionData, nil)
+	if err != nil {
+		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToTransactionData)
+	}
+	r.transactionDB = transactionDB
+
+	blockDB, err := leveldb.OpenFile(r.PathToBlockData, nil)
+	if err != nil {
+		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToBlockData)
+	}
+	r.blockDB = blockDB
+
+	chainDB, err := leveldb.OpenFile(r.PathToChainData, nil)
+	if err != nil {
+		log.Fatalf("Failed to open leveldb#openfile dir=%s", r.PathToChainData)
+	}
+	r.chainDB = chainDB
+
 	return r
 }
 
+// ErrAddNilBlock is used when no mined block is given to add
+var ErrAddNilBlock = errors.New("Mined block is not given to add")
+
 // AddBlock adds mined block into blockchain
 func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
+	if minedBlock == nil {
+		return ErrAddNilBlock
+	}
+
 	return nil
 }
 
