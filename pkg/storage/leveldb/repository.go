@@ -158,8 +158,17 @@ func toRepoBlock(miningBlock *mining.Block) *Block {
 
 // GetBlockCount returns the latest block count in blockchain
 func (db *LevelDB) GetBlockCount() uint32 {
-	// TODO: Implement this
-	return 0
+	var count uint32
+	iter := db.chainDB.NewIterator(nil, nil)
+	for iter.Next() {
+		count++
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		panic(err)
+	}
+	return count
 }
 
 // GetLastBlock returns the last block in blockchain
