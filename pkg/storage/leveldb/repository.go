@@ -283,8 +283,52 @@ func (db *LevelDB) GetBlockchain() *listing.Blockchain {
 
 // ReplaceChain replace the current blockchain with the newchain
 func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
-	// TODO: Implement this
+	err := db.deleteAllData()
+	if err != nil {
+		return err
+	}
 
+	var lastMinedBlock mining.Block
+	for _, minedBlock := range newChain.Chain {
+		lastMinedBlock = minedBlock
+		err = db.AddBlock(&minedBlock)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	db.lastBlockHash = *lastMinedBlock.Hash
+	db.blockCount = uint32(len(newChain.Chain))
+
+	return nil
+}
+
+func (db *LevelDB) deleteAllData() error {
+	deleteDB(db.transactionDB)
+	deleteDB(db.blockDB)
+	deleteDB(db.chainDB)
+	db.lastBlockHash = ""
+	db.blockCount = 0
+	return nil
+}
+
+func deleteDB(db *leveldb.DB) error {
+	var txToDelete [][]byte
+	iter := db.NewIterator(nil, nil)
+	for iter.Next() {
+		txToDelete = append(txToDelete, iter.Key())
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		panic(err)
+	}
+	for _, txTimestamp := range txToDelete {
+		err = db.Delete(txTimestamp, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 	return nil
 }
 
