@@ -101,6 +101,19 @@ func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
 	return nil
 }
 
+// Close closes any db connections
+func (db *LevelDB) Close() error {
+	err := db.transactionDB.Close()
+	if err != nil {
+		return err
+	}
+	err = db.blockDB.Close()
+	if err != nil {
+		return err
+	}
+	return db.chainDB.Close()
+}
+
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {

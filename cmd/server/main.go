@@ -117,6 +117,8 @@ func main() {
 			Config.Mining.MineRate)
 	case LevelDB:
 		repository := leveldb.NewRepository("~/kndchainDatadir")
+		defer repository.Close()
+
 		listingService = listing.NewService(repository)
 		calculatingService = calculating.NewService(Config.Wallet.InitialBalance)
 		validatingService = validating.NewService(
