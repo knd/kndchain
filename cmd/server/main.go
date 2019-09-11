@@ -10,8 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/knd/kndchain/pkg/storage/leveldb"
-
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/http/rest"
@@ -19,6 +17,7 @@ import (
 	"github.com/knd/kndchain/pkg/miner"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
+	"github.com/knd/kndchain/pkg/storage/leveldb"
 	"github.com/knd/kndchain/pkg/storage/memory"
 	"github.com/knd/kndchain/pkg/syncing"
 	"github.com/knd/kndchain/pkg/validating"
@@ -117,7 +116,7 @@ func main() {
 			validatingService,
 			Config.Mining.MineRate)
 	case LevelDB:
-		repository := leveldb.NewRepository()
+		repository := leveldb.NewRepository("~/kndchainDatadir")
 		listingService = listing.NewService(repository)
 		calculatingService = calculating.NewService(Config.Wallet.InitialBalance)
 		validatingService = validating.NewService(
