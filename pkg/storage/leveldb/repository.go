@@ -24,6 +24,7 @@ type LevelDB struct {
 	blockDB               *leveldb.DB
 	chainDB               *leveldb.DB
 	lastBlockHash         string
+	blockCount            uint32
 }
 
 // NewRepository creates a repository to interact with LevelDB
@@ -128,6 +129,7 @@ func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
 	}
 
 	db.lastBlockHash = *rBlock.LastHash
+	db.blockCount++
 
 	return nil
 }
@@ -158,6 +160,10 @@ func toRepoBlock(miningBlock *mining.Block) *Block {
 
 // GetBlockCount returns the latest block count in blockchain
 func (db *LevelDB) GetBlockCount() uint32 {
+	if db.blockCount != 0 {
+		return db.blockCount
+	}
+
 	var count uint32
 	iter := db.chainDB.NewIterator(nil, nil)
 	for iter.Next() {
