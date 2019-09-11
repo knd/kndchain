@@ -217,9 +217,28 @@ func toListingBlock(b Block) listing.Block {
 
 // GetBlockchain returns a list of blocks from genesis block
 func (db *LevelDB) GetBlockchain() *listing.Blockchain {
+	lBlockchain := &listing.Blockchain{}
 	// TODO: Implement this
+	iter := db.chainDB.NewIterator(nil, nil)
+	for iter.Next() {
+		blockBytes, err := db.blockDB.Get(iter.Value(), nil)
+		if err != nil {
+			panic(err)
+		}
+		var rBlock Block
+		err = json.Unmarshal(blockBytes, &rBlock)
+		if err != nil {
+			panic(err)
+		}
+		lBlockchain.Chain = append(lBlockchain.Chain, toListingBlock(rBlock))
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		panic(err)
+	}
 
-	return nil
+	return lBlockchain
 }
 
 // ReplaceChain replace the current blockchain with the newchain
