@@ -173,21 +173,55 @@ func (db *LevelDB) GetBlockCount() uint32 {
 
 // GetLastBlock returns the last block in blockchain
 func (db *LevelDB) GetLastBlock() listing.Block {
-	var rBlock Block
 	if db.lastBlockHash != "" {
-		blockBytes, err := db.blockDB.Get(
-			[]byte(db.lastBlockHash),
-			nil)
-		if err != nil {
-			panic(err)
+		lBlock := db.GetBlockByHash(db.lastBlockHash)
+		if lBlock == nil {
+			panic("No last block found by lasBlockHash")
 		}
-		err = json.Unmarshal(blockBytes, &rBlock)
-		if err != nil {
-			panic(err)
-		}
+		return *lBlock
 	}
 
-	return toListingBlock(rBlock)
+	iter := db.chainDB.NewIterator(nil, nil)
+	var lastBlockHash string
+	var lastBlockHashBytes []byte
+	for iter.Next() {
+		lastBlockHashBytes = iter.Value()
+		lastBlockHash = string(lastBlockHashBytes[:])
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		panic(err)
+	}
+	db.lastBlockHash = lastBlockHash
+	lBlock := db.GetBlockByHash(db.lastBlockHash)
+	if lBlock == nil {
+		panic(err)
+	}
+
+	return *lBlock
+}
+
+// GetBlockByHash returns block with given block hash
+func (db *LevelDB) GetBlockByHash(hash string) *listing.Block {
+	var rBlock Block
+	blockBytes, err := db.blockDB.Get(
+		[]byte(hash),
+		nil)
+	if err == leveldb.ErrNotFound {
+		return nil
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(blockBytes, &rBlock)
+	if err != nil {
+		panic(err)
+	}
+
+	lBlock := toListingBlock(rBlock)
+	return &lBlock
 }
 
 func toListingBlock(b Block) listing.Block {
