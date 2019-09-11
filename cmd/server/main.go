@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/knd/kndchain/pkg/storage/leveldb"
+
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/http/rest"
@@ -32,6 +34,9 @@ const (
 
 	// Memory will store data in memory
 	Memory
+
+	// LevelDB will store data in local key-value store
+	LevelDB
 )
 
 const (
@@ -98,12 +103,33 @@ func main() {
 
 	switch storageType {
 	case Memory:
-		r := memory.NewRepository()
-
-		listingService = listing.NewService(r)
+		repository := memory.NewRepository()
+		listingService = listing.NewService(repository)
 		calculatingService = calculating.NewService(Config.Wallet.InitialBalance)
-		validatingService = validating.NewService(listingService, calculatingService, Config.Transaction.RewardTxInputAddress, Config.Transaction.MiningReward)
-		miningService = mining.NewService(r, listingService, validatingService, Config.Mining.MineRate)
+		validatingService = validating.NewService(
+			listingService,
+			calculatingService,
+			Config.Transaction.RewardTxInputAddress,
+			Config.Transaction.MiningReward)
+		miningService = mining.NewService(
+			repository,
+			listingService,
+			validatingService,
+			Config.Mining.MineRate)
+	case LevelDB:
+		repository := leveldb.NewRepository()
+		listingService = listing.NewService(repository)
+		calculatingService = calculating.NewService(Config.Wallet.InitialBalance)
+		validatingService = validating.NewService(
+			listingService,
+			calculatingService,
+			Config.Transaction.RewardTxInputAddress,
+			Config.Transaction.MiningReward)
+		miningService = mining.NewService(
+			repository,
+			listingService,
+			validatingService,
+			Config.Mining.MineRate)
 	}
 
 	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance)
