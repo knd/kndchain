@@ -79,6 +79,7 @@ func initConfig() {
 
 func main() {
 	initConfig()
+	enableMining := len(os.Args) > 1 && os.Args[1] == "mining"
 
 	repository := leveldb.NewRepository("~/kndchainDatadir")
 	defer repository.Close()
@@ -98,10 +99,13 @@ func main() {
 		validatingService,
 		Config.Mining.MineRate)
 
-	minerWallet := wallet.NewWallet(
-		crypto.NewSecp256k1Generator(),
-		calculatingService,
-		Config.Wallet.InitialBalance)
+	var minerWallet wallet.Wallet
+	if enableMining {
+		minerWallet = wallet.NewWallet(
+			crypto.NewSecp256k1Generator(),
+			calculatingService,
+			Config.Wallet.InitialBalance)
+	}
 
 	transactionPool := wallet.NewTransactionPool(listingService)
 
@@ -137,7 +141,8 @@ func main() {
 		transactionPool,
 		minerWallet,
 		miner,
-		calculatingService)
+		calculatingService,
+		enableMining)
 
 	log.Printf(
 		"Syncing blockchain. Current chain len: %d", listingService.GetBlockCount())

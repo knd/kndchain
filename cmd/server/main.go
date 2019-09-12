@@ -150,7 +150,7 @@ func main() {
 	}
 
 	miner := miner.NewMiner(miningService, listingService, transactionPool, minerWallet, p2pComm, Config.Transaction.RewardTxInputAddress, Config.Transaction.MiningReward)
-	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner, calculatingService)
+	router := rest.Handler(listingService, miningService, p2pComm, transactionPool, minerWallet, miner, calculatingService, true)
 
 	var port int
 	if len(os.Args) > 1 && os.Args[1] == "beacon" {

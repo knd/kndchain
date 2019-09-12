@@ -17,15 +17,17 @@ import (
 )
 
 // Handler provides list of routes and action handlers
-func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet, miner miner.Miner, cal calculating.Service) http.Handler {
+func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.TransactionPool, wal wallet.Wallet, miner miner.Miner, cal calculating.Service, enableMiningAPI bool) http.Handler {
 	router := httprouter.New()
 
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
 	router.POST("/api/transactions", addTx(p, wal, c, l))
 	router.GET("/api/transactions", getTxPool(p))
-	router.GET("/api/mine-transactions", mineTransactions(miner, l))     // for testing
-	router.GET("/api/mining-address", getMiningAddressInfo(wal, l, cal)) // for testing
+	if enableMiningAPI {
+		router.GET("/api/mine-transactions", mineTransactions(miner, l))     // for testing
+		router.GET("/api/mining-address", getMiningAddressInfo(wal, l, cal)) // for testing
+	}
 
 	return router
 }
