@@ -133,7 +133,7 @@ func main() {
 			Config.Mining.MineRate)
 	}
 
-	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance)
+	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance, nil)
 	transactionPool := wallet.NewTransactionPool(listingService)
 
 	switch networkingType {

@@ -3,7 +3,10 @@ package wallet
 import (
 	"encoding/hex"
 	"errors"
+	"io/ioutil"
 	"log"
+	"os"
+	"path"
 
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/listing"
@@ -29,26 +32,63 @@ type Wallet interface {
 }
 
 type wallet struct {
-	gen        KeyPairGenerator
-	balance    uint64
-	publicKey  []byte
-	privateKey []byte
-	calculator calculating.Service
+	gen           KeyPairGenerator
+	balance       uint64
+	publicKey     []byte
+	privateKey    []byte
+	calculator    calculating.Service
+	pathToKeysdir *string
 }
 
 // NewWallet creates a wallet with necessary dependencies
-func NewWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint64) Wallet {
+func NewWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint64, pathToKeysdir *string) Wallet {
 	pubKey, privKey := kpg.Generate()
 
 	w := &wallet{
-		gen:        kpg,
-		balance:    initialBalance,
-		publicKey:  pubKey,
-		privateKey: privKey,
-		calculator: c,
+		gen:           kpg,
+		balance:       initialBalance,
+		publicKey:     pubKey,
+		privateKey:    privKey,
+		calculator:    c,
+		pathToKeysdir: pathToKeysdir,
+	}
+
+	if pathToKeysdir != nil && *pathToKeysdir != "" {
+		pubKeyHex := hex.EncodeToString(pubKey)
+		err := ioutil.WriteFile(path.Join(*pathToKeysdir, pubKeyHex), privKey, os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error to save keys into %s, %v", *pathToKeysdir, err)
+		}
 	}
 
 	return w
+}
+
+// LoadWallet loads privKey from local filesystem
+func LoadWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint64, pathToKeysdir string, pubKeyHex string) Wallet {
+	file, err := os.Open(path.Join(pathToKeysdir, pubKeyHex))
+	if err != nil {
+		log.Fatalf("Error opening key file %s, %v", path.Join(pathToKeysdir, pubKeyHex), err)
+	}
+	defer file.Close()
+
+	privKey, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatalf("Error reading key file %s, %v", path.Join(pathToKeysdir, pubKeyHex), err)
+	}
+
+	pubKey, err := hex.DecodeString(pubKeyHex)
+	if err != nil {
+		log.Fatalf("Invalid public key hex=%s, %v", pubKey, err)
+	}
+	return &wallet{
+		gen:           kpg,
+		balance:       initialBalance,
+		publicKey:     pubKey,
+		privateKey:    privKey,
+		calculator:    c,
+		pathToKeysdir: &pathToKeysdir,
+	}
 }
 
 // PubKey returns public key in bytes

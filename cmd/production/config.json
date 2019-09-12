@@ -1,4 +1,6 @@
 {
+  "pathToDatadir": "/Users/knd/kndchainDatadir",
+  "pathToKeysdir": "/Users/knd/kndchainKeysdir",
   "mining": {
     "mineRate": 120000,
     "genesisLastHash": "0x000",

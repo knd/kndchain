@@ -59,10 +59,12 @@ type wal struct {
 
 // Config feeds config from json
 var Config struct {
-	Mining      mine        `json:"mining"`
-	Syncing     sync        `json:"syncing"`
-	Transaction transaction `json:"transaction"`
-	Wallet      wal         `json:"wallet"`
+	Mining        mine        `json:"mining"`
+	Syncing       sync        `json:"syncing"`
+	Transaction   transaction `json:"transaction"`
+	Wallet        wal         `json:"wallet"`
+	PathToDatadir string      `json:"pathToDatadir"`
+	PathToKeysdir string      `json:"pathToKeysdir"`
 }
 
 func initConfig() {
@@ -81,7 +83,7 @@ func main() {
 	initConfig()
 	enableMining := len(os.Args) > 1 && os.Args[1] == "mining"
 
-	repository := leveldb.NewRepository("~/kndchainDatadir")
+	repository := leveldb.NewRepository(Config.PathToDatadir)
 	defer repository.Close()
 
 	listingService := listing.NewService(repository)
@@ -104,7 +106,8 @@ func main() {
 		minerWallet = wallet.NewWallet(
 			crypto.NewSecp256k1Generator(),
 			calculatingService,
-			Config.Wallet.InitialBalance)
+			Config.Wallet.InitialBalance,
+			&Config.PathToKeysdir)
 	}
 
 	transactionPool := wallet.NewTransactionPool(listingService)

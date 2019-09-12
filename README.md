@@ -6,6 +6,7 @@
 
 ```
 mkdir ~/kndchainDatadir
+mkdir ~/kndchainKeys
 git clone git@github.com:knd/kndchain.git
 cd kndchain
 ```
