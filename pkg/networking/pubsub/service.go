@@ -10,17 +10,6 @@ import (
 	"github.com/knd/kndchain/pkg/wallet"
 )
 
-const (
-	// ChannelPubSub is channel name for publisher to send and subscribers to receive messages
-	ChannelPubSub = "kndchain"
-
-	// ChannelTransactions is channel name for publisher to send and subscribers to receive transactions
-	ChannelTransactions = "kndtransactions"
-
-	// PortPubSub is port on which pubsub server is run
-	PortPubSub = ":6379"
-)
-
 // Service provides networking operations
 type Service interface {
 	Connect() error
@@ -31,24 +20,30 @@ type Service interface {
 }
 
 type service struct {
-	l   listing.Service
-	m   mining.Service
-	p   wallet.TransactionPool
-	psc *redis.PubSubConn
+	l                   listing.Service
+	m                   mining.Service
+	p                   wallet.TransactionPool
+	psc                 *redis.PubSubConn
+	ChannelPubSub       string
+	ChannelTransactions string
+	URLPubSub           string
 }
 
 // NewService creates a networking service with necessary dependencies
-func NewService(l listing.Service, m mining.Service, p wallet.TransactionPool) Service {
+func NewService(l listing.Service, m mining.Service, p wallet.TransactionPool, channelPubSub string, channelTransactions string, urlPubSub string) Service {
 	return &service{
-		l: l,
-		m: m,
-		p: p,
+		l:                   l,
+		m:                   m,
+		p:                   p,
+		ChannelPubSub:       channelPubSub,
+		ChannelTransactions: channelTransactions,
+		URLPubSub:           urlPubSub,
 	}
 }
 
 // Connect creates communication line with peers
 func (s *service) Connect() error {
-	conn, err := redis.Dial("tcp", PortPubSub)
+	conn, err := redis.Dial("tcp", s.URLPubSub)
 	if err != nil {
 		log.Printf("PubSubService#Connect: Failed to dial tcp connection, %v", err)
 		return err
@@ -72,14 +67,14 @@ func (s *service) BroadcastBlockchain(bc *listing.Blockchain) error {
 		return err
 	}
 
-	conn, err := redis.Dial("tcp", PortPubSub)
+	conn, err := redis.Dial("tcp", s.URLPubSub)
 	defer conn.Close()
 	if err != nil {
 		log.Printf("PubSubService#BroadcastBlockchain: Failed to dial tcp connection, %v", err)
 		return err
 	}
 
-	_, err = conn.Do("PUBLISH", ChannelPubSub, string(b[:]))
+	_, err = conn.Do("PUBLISH", s.ChannelPubSub, string(b[:]))
 
 	return err
 }
@@ -91,29 +86,29 @@ func (s *service) BroadcastTransaction(tx wallet.Transaction) error {
 		log.Fatal(err)
 	}
 
-	conn, err := redis.Dial("tcp", PortPubSub)
+	conn, err := redis.Dial("tcp", s.URLPubSub)
 	defer conn.Close()
 	if err != nil {
 		log.Printf("PubSubService#BroadcastTransaction: Failed to dial tcp connection, %v", err)
 		return err
 	}
 
-	_, err = conn.Do("PUBLISH", ChannelTransactions, string(b[:]))
+	_, err = conn.Do("PUBLISH", s.ChannelTransactions, string(b[:]))
 
 	return err
 }
 
 // SubscribePeers listens to peers for incoming blockchain and transactions
 func (s *service) SubscribePeers() error {
-	err := s.psc.Subscribe(ChannelPubSub)
+	err := s.psc.Subscribe(s.ChannelPubSub)
 	if err != nil {
-		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", ChannelPubSub, err)
+		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", s.ChannelPubSub, err)
 		return err
 	}
 
-	err = s.psc.Subscribe(ChannelTransactions)
+	err = s.psc.Subscribe(s.ChannelTransactions)
 	if err != nil {
-		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", ChannelTransactions, err)
+		log.Printf("PubSubService#SubscribePeers: Failed to subscribe to peers, channel=%s, %v", s.ChannelTransactions, err)
 		return err
 	}
 
@@ -121,7 +116,7 @@ func (s *service) SubscribePeers() error {
 		for conn.Err() == nil {
 			switch v := s.psc.Receive().(type) {
 			case redis.Message:
-				if v.Channel == ChannelPubSub {
+				if v.Channel == s.ChannelPubSub {
 					// Received incoming blockchain
 					// Replace incoming blockchain if valid longest chain
 					var bc mining.Blockchain
@@ -145,7 +140,7 @@ func (s *service) SubscribePeers() error {
 					}
 
 					log.Printf("Replaced with longer chain. New len: %d", s.l.GetBlockCount())
-				} else if v.Channel == ChannelTransactions {
+				} else if v.Channel == s.ChannelTransactions {
 					// Received incoming transaction
 					// add transaction to pool
 					var tx wallet.Tx

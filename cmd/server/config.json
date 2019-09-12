@@ -1,6 +1,6 @@
 {
   "mining": {
-    "mineRate": 600000,
+    "mineRate": 120000,
     "genesisLastHash": "0x000",
     "genesisHash": "0x000",
     "genesisDifficulty": 15,
@@ -9,7 +9,7 @@
   "syncing": {
     "channelPubSub": "kndchain",
     "channelTransactions": "kndtransactions",
-    "portPubSub": ":6379"
+    "urlPubSub": "http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com:6379"
   },
   "transaction": {
     "rewardTxInputAddress": "MINER_REWARD",

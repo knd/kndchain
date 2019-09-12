@@ -57,7 +57,7 @@ type mine struct {
 type sync struct {
 	ChannelPubSub       string `json:"channelPubSub"`
 	ChannelTransactions string `json:"channelTransactions"`
-	PortPubSub          string `json:"portPubSub"`
+	URLPubSub           string `json:"urlPubSub"`
 }
 
 type transaction struct {
@@ -138,7 +138,7 @@ func main() {
 
 	switch networkingType {
 	case PubSub:
-		p2pComm = pubsub.NewService(listingService, miningService, transactionPool)
+		p2pComm = pubsub.NewService(listingService, miningService, transactionPool, Config.Syncing.ChannelPubSub, Config.Syncing.ChannelTransactions, Config.Syncing.URLPubSub)
 
 		p2pComm.Connect()
 		defer p2pComm.Disconnect()
