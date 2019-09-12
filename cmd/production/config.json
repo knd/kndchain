@@ -8,7 +8,7 @@
   },
   "syncing": {
     "urlPubSub": "http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com:6379",
-    "urlBeaconNode": "http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com"
+    "urlBeaconNode": "http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com:3000"
   },
   "transaction": {
     "rewardTxInputAddress": "MINER_REWARD",

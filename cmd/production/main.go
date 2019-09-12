@@ -157,6 +157,13 @@ func main() {
 	log.Printf(
 		"Blockchain synced. Synced chain len: %d", listingService.GetBlockCount())
 
+	if listingService.GetBlockCount() == 0 {
+		// create genesis block
+		genesisBlock, _ := mining.CreateGenesisBlock(Config.Mining.GenesisLastHash, Config.Mining.GenesisHash, Config.Mining.GenesisDifficulty, Config.Mining.GenesisNonce)
+		miningService.AddBlock(genesisBlock)
+		p2pComm.BroadcastBlockchain(listingService.GetBlockchain())
+	}
+
 	log.Println("Syncing transaction transactionPool...")
 
 	err = syncer.SyncTransactionPool(
