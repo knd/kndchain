@@ -13,12 +13,12 @@ cd kndchain
 ### Run a node
 
 ```
-go run cmd/server/main.go
+go run cmd/production/main.go
 ```
 
 ### Mining
 
 ```
 # to run a mining node (optional)
-go run cmd/server/maing.go --mining
+go run cmd/production/main.go mining
 ```
