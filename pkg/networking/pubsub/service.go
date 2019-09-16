@@ -43,7 +43,7 @@ func NewService(l listing.Service, m mining.Service, p wallet.TransactionPool, c
 
 // Connect creates communication line with peers
 func (s *service) Connect() error {
-	conn, err := redis.Dial("tcp", s.URLPubSub)
+	conn, err := redis.DialURL(s.URLPubSub)
 	if err != nil {
 		log.Printf("PubSubService#Connect: Failed to dial tcp connection, %v", err)
 		return err
@@ -67,7 +67,7 @@ func (s *service) BroadcastBlockchain(bc *listing.Blockchain) error {
 		return err
 	}
 
-	conn, err := redis.Dial("tcp", s.URLPubSub)
+	conn, err := redis.DialURL(s.URLPubSub)
 	defer conn.Close()
 	if err != nil {
 		log.Printf("PubSubService#BroadcastBlockchain: Failed to dial tcp connection, %v", err)
@@ -86,7 +86,7 @@ func (s *service) BroadcastTransaction(tx wallet.Transaction) error {
 		log.Fatal(err)
 	}
 
-	conn, err := redis.Dial("tcp", s.URLPubSub)
+	conn, err := redis.DialURL(s.URLPubSub)
 	defer conn.Close()
 	if err != nil {
 		log.Printf("PubSubService#BroadcastTransaction: Failed to dial tcp connection, %v", err)

@@ -5,21 +5,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/knd/kndchain/pkg/networking/pubsub"
-
+	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
+	"github.com/knd/kndchain/pkg/networking/pubsub"
 	"github.com/knd/kndchain/pkg/storage/leveldb"
 	"github.com/knd/kndchain/pkg/validating"
 	"github.com/knd/kndchain/pkg/wallet"
-
-	"github.com/knd/kndchain/pkg/calculating"
 )
 
 func main() {
 	calculator := calculating.NewService(1000)
-	repository := leveldb.NewRepository("/home/ubuntu/kndchainDatadir")
+	repository := leveldb.NewRepository("/tmp/kndchainDatadir")
 	lister := listing.NewService(repository)
 	validator := validating.NewService(lister, calculator, "MINER_REWARD", 5)
 	miningService := mining.NewService(repository, lister, validator, 10*1000)
@@ -29,7 +27,7 @@ func main() {
 		crypto.NewSecp256k1Generator(),
 		calculator,
 		1000,
-		"/home/ubuntu/kndchainKeys",
+		"/tmp/kndchainKeys",
 		os.Args[1])
 
 	// Open Redis connection
@@ -40,7 +38,7 @@ func main() {
 		transactionPool,
 		"kndchain",
 		"kndchaintransactions",
-		"http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com:6379")
+		"redis://@localhost:6379")
 	p2pComm.Connect()
 	defer p2pComm.Disconnect()
 	err := p2pComm.SubscribePeers()
