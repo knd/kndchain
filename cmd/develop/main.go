@@ -71,14 +71,16 @@ type wal struct {
 
 // Config feeds config from json
 var Config struct {
-	Mining      mine        `json:"mining"`
-	Syncing     sync        `json:"syncing"`
-	Transaction transaction `json:"transaction"`
-	Wallet      wal         `json:"wallet"`
+	Mining        mine        `json:"mining"`
+	Syncing       sync        `json:"syncing"`
+	Transaction   transaction `json:"transaction"`
+	Wallet        wal         `json:"wallet"`
+	PathToDatadir string      `json:"pathToDatadir"`
+	PathToKeysdir string      `json:"pathToKeysdir"`
 }
 
 func initConfig() {
-	configFile, err := os.Open("./cmd/server/config.json")
+	configFile, err := os.Open("./cmd/develop/config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,7 +93,7 @@ func initConfig() {
 
 func main() {
 	initConfig()
-	storageType := Memory    // hard-coded
+	storageType := LevelDB   // hard-coded
 	networkingType := PubSub // hard-coded
 
 	var miningService mining.Service
@@ -116,7 +118,7 @@ func main() {
 			validatingService,
 			Config.Mining.MineRate)
 	case LevelDB:
-		repository := leveldb.NewRepository("~/kndchainDatadir")
+		repository := leveldb.NewRepository(Config.PathToDatadir)
 		defer repository.Close()
 
 		listingService = listing.NewService(repository)
@@ -133,7 +135,7 @@ func main() {
 			Config.Mining.MineRate)
 	}
 
-	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance, nil)
+	minerWallet := wallet.NewWallet(crypto.NewSecp256k1Generator(), calculatingService, Config.Wallet.InitialBalance, &Config.PathToKeysdir)
 	transactionPool := wallet.NewTransactionPool(listingService)
 
 	switch networkingType {

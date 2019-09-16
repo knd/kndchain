@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/knd/kndchain/pkg/storage/leveldb"
+
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
-	"github.com/knd/kndchain/pkg/storage/memory"
 	"github.com/knd/kndchain/pkg/validating"
 )
 
@@ -20,6 +21,8 @@ const (
 
 	// Memory stores data in memory
 	Memory
+
+	LevelDB
 )
 
 func toMiningTransactions(data []listing.Transaction) []mining.Transaction {
@@ -41,20 +44,17 @@ func toMiningTransactions(data []listing.Transaction) []mining.Transaction {
 
 func main() {
 	// set up storage
-	storageType := Memory
+	// storageType := Memory
 
 	var miner mining.Service
 	var lister listing.Service
 	var validator validating.Service
 
-	switch storageType {
-	case Memory:
-		storage := memory.NewRepository()
+	storage := leveldb.NewRepository("/Users/knd/kndchainDatadir")
 
-		lister = listing.NewService(storage)
-		validator = validating.NewService(lister, calculating.NewService(1000), "MINER_REWARD", 5)
-		miner = mining.NewService(storage, lister, validator, 600000)
-	}
+	lister = listing.NewService(storage)
+	validator = validating.NewService(lister, calculating.NewService(1000), "MINER_REWARD", 5)
+	miner = mining.NewService(storage, lister, validator, 200000)
 
 	fmt.Println("Staring now")
 

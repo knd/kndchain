@@ -1,4 +1,6 @@
 {
+  "pathToDatadir": "/Users/knd/kndchainDatadir",
+  "pathToKeysdir": "/Users/knd/kndchainKeys",
   "mining": {
     "mineRate": 120000,
     "genesisLastHash": "0x000",
@@ -9,7 +11,7 @@
   "syncing": {
     "channelPubSub": "kndchain",
     "channelTransactions": "kndtransactions",
-    "urlPubSub": "http://ec2-52-27-194-217.us-west-2.compute.amazonaws.com:6379"
+    "urlPubSub": "ec2-52-27-194-217.us-west-2.compute.amazonaws.com:6379"
   },
   "transaction": {
     "rewardTxInputAddress": "MINER_REWARD",
