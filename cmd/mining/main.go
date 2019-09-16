@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/knd/kndchain/pkg/networking/pubsub"
 
@@ -64,7 +65,26 @@ func main() {
 		p2pComm.BroadcastBlockchain(lister.GetBlockchain())
 	}
 
+	var durations []float64
 	for {
-		miner.Mine()
+		lastBlock := lister.GetLastBlock()
+
+		minedBlock, _ := miner.Mine()
+
+		durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
+		durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
+
+		durations = append(durations, durationDiffInMillis)
+		var sumDuration float64
+		for _, duration := range durations {
+			sumDuration = sumDuration + duration
+		}
+		averageDuration := float64(sumDuration) / float64(len(durations))
+
+		log.Printf(
+			"Time to mine block: %.2f ms. Difficulty: %d. Average time: %.2f ms", durationDiffInMillis,
+			minedBlock.Difficulty,
+			averageDuration,
+		)
 	}
 }

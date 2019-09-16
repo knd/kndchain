@@ -2,10 +2,10 @@
   "pathToDatadir": "/Users/knd/kndchainDatadir",
   "pathToKeysdir": "/Users/knd/kndchainKeysdir",
   "mining": {
-    "mineRate": 120000,
+    "mineRate": 10000,
     "genesisLastHash": "0x000",
     "genesisHash": "0x000",
-    "genesisDifficulty": 15,
+    "genesisDifficulty": 10,
     "genesisNonce": 0
   },
   "syncing": {

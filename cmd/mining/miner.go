@@ -11,7 +11,7 @@ import (
 
 // Miner provides entry to mining actions
 type Miner interface {
-	Mine() error
+	Mine() (*mining.Block, error)
 }
 
 type miner struct {
@@ -29,7 +29,7 @@ func NewMiner(s mining.Service, l listing.Service, p wallet.TransactionPool, w w
 	return &miner{s, l, p, w, c, rewardTxInputAddress, rewardAmount}
 }
 
-func (m *miner) Mine() error {
+func (m *miner) Mine() (*mining.Block, error) {
 	validTransactions := m.transactionPool.ValidTransactions()
 	rewardTransaction, _ := wallet.CreateRewardTransaction(m.wal, m.rewardTxInputAddress, m.rewardAmount)
 
@@ -47,28 +47,28 @@ func (m *miner) Mine() error {
 	minedBlock, err := m.service.MineNewBlock(mb, fromPooltoMiningTransactions(validTransactions))
 	if err != nil {
 		log.Printf("Failed to create mined block: %s", err.Error())
-		return err
+		return nil, err
 	}
 
 	err = m.service.AddBlock(minedBlock)
 	if err != nil {
 		log.Printf("Failed to add block to chain: %s", err.Error())
-		return err
+		return nil, err
 	}
 
 	err = m.comm.BroadcastBlockchain(m.lister.GetBlockchain())
 	if err != nil {
 		log.Printf("Failed to broadcast blockchain: %s", err.Error())
-		return err
+		return minedBlock, err
 	}
 
 	err = m.transactionPool.Clear()
 	if err != nil {
 		log.Printf("Failed to clear transaction pool: %s", err.Error())
-		return err
+		return minedBlock, err
 	}
 
-	return nil
+	return minedBlock, nil
 }
 
 func fromListingtoMiningTransactions(data []listing.Transaction) []mining.Transaction {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
+	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/miner"
 	"github.com/knd/kndchain/pkg/mining"
@@ -18,31 +19,11 @@ import (
 	"github.com/knd/kndchain/pkg/wallet"
 )
 
-// Type indicates type of constants
-type Type int
-
-const (
-	// JSON will store data in JSON files saved on disk
-	JSON Type = iota
-
-	// Memory will store data in memory
-	Memory
-
-	// LevelDB will store data in local key-value store
-	LevelDB
-)
-
 func main() {
 	config := initConfig()
-	enableMining := len(os.Args) > 2 && os.Args[1] == "mining"
-	var miningAddress string
-	if len(os.Args) > 2 && enableMining {
-		miningAddress = os.Args[2]
-	}
-
+	miningAddress := os.Args[1]
 	repository := leveldb.NewRepository(config.PathToDatadir)
 	defer repository.Close()
-
 	listingService := listing.NewService(repository)
 	calculatingService := calculating.NewService(config.Wallet.InitialBalance)
 	validatingService := validating.NewService(
@@ -55,7 +36,6 @@ func main() {
 		listingService,
 		validatingService,
 		config.Mining.MineRate)
-
 	transactionPool := wallet.NewTransactionPool(listingService)
 	p2pComm := pubsub.NewService(
 		listingService,
@@ -72,32 +52,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var m miner.Miner
-	if enableMining {
-		minerWallet := wallet.LoadWallet(
-			crypto.NewSecp256k1Generator(),
-			calculatingService,
-			config.Wallet.InitialBalance,
-			config.PathToKeysdir,
-			miningAddress)
-		m = miner.NewMiner(
-			miningService,
-			listingService,
-			transactionPool,
-			minerWallet,
-			p2pComm,
-			config.Transaction.RewardTxInputAddress,
-			config.Transaction.MiningReward)
-	}
+	minerWallet := wallet.LoadWallet(
+		crypto.NewSecp256k1Generator(),
+		calculatingService,
+		config.Wallet.InitialBalance,
+		config.PathToKeysdir,
+		miningAddress)
+	m := miner.NewMiner(
+		miningService,
+		listingService,
+		transactionPool,
+		minerWallet,
+		p2pComm,
+		config.Transaction.RewardTxInputAddress,
+		config.Transaction.MiningReward)
 
-	// router := rest.Handler(
-	// 	listingService,
-	// 	miningService,
-	// 	p2pComm,
-	// 	transactionPool,
-	// 	m,
-	// 	calculatingService,
-	// 	enableMining)
+	router := rest.Handler(
+		listingService,
+		miningService,
+		p2pComm,
+		transactionPool,
+		minerWallet,
+		m,
+		calculatingService)
 
 	log.Printf(
 		"Syncing blockchain. Current chain len: %d", listingService.GetBlockCount())
@@ -120,15 +97,12 @@ func main() {
 	}
 
 	log.Println("Syncing transaction transactionPool...")
-
 	err = syncer.SyncTransactionPool(
 		fmt.Sprintf("%s/api/transactions", config.Syncing.URLBeaconNode))
 	if err != nil {
 		log.Println(err)
 	}
-
 	log.Printf("Transaction transactionPool synced")
-
 	log.Println("Serving now on http://localhost:3001")
 	log.Fatal(http.ListenAndServe(":3001", router))
 }
