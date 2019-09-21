@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"time"
@@ -29,24 +30,37 @@ const (
 	p2pBlockChannel string = "kndchain"
 	p2pTxChannel    string = "kndchaintransactions"
 	p2pURI          string = "redis://@localhost:6379"
-
-	rewardPubKey string = "04749d91026def10f5c55170115b119291c2c9ddc9f8e009808a93fd8c7e4f3753d74ce24e89b7341c634d58e47765c2be8fdf2e9ccaca78f36c1aa7f6ca33b615"
 )
 
 func main() {
+	enableMining := flag.Bool("mining", false, "enable mining option")
+	address := flag.String("address", "", "provide pubkeyhex/ address used for transactions or mining reward")
+	flag.Parse()
+
 	calculator := calculating.NewService(initialBalance)
 	repository := leveldb.NewRepository(chainDatadir)
 	lister := listing.NewService(repository)
 	validator := validating.NewService(lister, calculator, blockRewardAddress, blockRewardAmount)
 	miningService := mining.NewService(repository, lister, validator, blockMiningRate)
 
-	// Load wallet
-	minerWallet := wallet.LoadWallet(
-		crypto.NewSecp256k1Generator(),
-		calculator,
-		lister,
-		keysDatadir,
-		rewardPubKey)
+	var wal wallet.Wallet
+	if address != nil {
+		// Load wallet
+		wal = wallet.LoadWallet(
+			crypto.NewSecp256k1Generator(),
+			calculator,
+			lister,
+			keysDatadir,
+			*address)
+	} else {
+		keysDatadirValue := keysDatadir
+		wal = wallet.NewWallet(
+			crypto.NewSecp256k1Generator(),
+			calculator,
+			initialBalance,
+			&keysDatadirValue)
+		log.Printf("Created new pubkey=%s, in %s", wal.PubKeyHex(), keysDatadirValue)
+	}
 
 	// Open Redis connection
 	transactionPool := wallet.NewTransactionPool(lister)
@@ -64,49 +78,52 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create miner
-	miner := NewMiner(
-		miningService,
-		lister,
-		transactionPool,
-		minerWallet,
-		p2pComm,
-		blockRewardAddress,
-		blockRewardAmount)
+	if *enableMining {
+		// Create miner
+		miner := NewMiner(
+			miningService,
+			lister,
+			transactionPool,
+			wal,
+			p2pComm,
+			blockRewardAddress,
+			blockRewardAmount)
 
-	// Create genesis block
-	if lister.GetBlockCount() == 0 {
-		genesisBlock, _ := mining.CreateGenesisBlock("0x000", "0x000", 10, 0)
-		miningService.AddBlock(genesisBlock)
-		p2pComm.BroadcastBlockchain(lister.GetBlockchain())
+		// Create genesis block
+		if lister.GetBlockCount() == 0 {
+			genesisBlock, _ := mining.CreateGenesisBlock("0x000", "0x000", 10, 0)
+			miningService.AddBlock(genesisBlock)
+			p2pComm.BroadcastBlockchain(lister.GetBlockchain())
+		}
+
+		// Start mining
+		var durations []float64
+		go func() {
+			for {
+				lastBlock := lister.GetLastBlock()
+
+				minedBlock, _ := miner.Mine()
+
+				durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
+				durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
+
+				durations = append(durations, durationDiffInMillis)
+				var sumDuration float64
+				for _, duration := range durations {
+					sumDuration = sumDuration + duration
+				}
+				averageDuration := float64(sumDuration) / float64(len(durations))
+
+				log.Printf(
+					"Time to mine block: %.2f ms. Difficulty: %d. Average time: %.2f ms", durationDiffInMillis,
+					minedBlock.Difficulty,
+					averageDuration,
+				)
+			}
+		}()
 	}
 
-	var durations []float64
-	go func() {
-		for {
-			lastBlock := lister.GetLastBlock()
-
-			minedBlock, _ := miner.Mine()
-
-			durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
-			durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
-
-			durations = append(durations, durationDiffInMillis)
-			var sumDuration float64
-			for _, duration := range durations {
-				sumDuration = sumDuration + duration
-			}
-			averageDuration := float64(sumDuration) / float64(len(durations))
-
-			log.Printf(
-				"Time to mine block: %.2f ms. Difficulty: %d. Average time: %.2f ms", durationDiffInMillis,
-				minedBlock.Difficulty,
-				averageDuration,
-			)
-		}
-	}()
-
-	router := rest.Handler(lister, miningService, p2pComm, transactionPool, nil, calculator)
+	router := rest.Handler(lister, miningService, p2pComm, transactionPool, wal, calculator)
 	log.Println("Serving now on http://localhost:3001")
 	log.Fatal(http.ListenAndServe(":3001", router))
 }
