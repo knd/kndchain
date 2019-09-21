@@ -15,20 +15,36 @@ import (
 	"github.com/knd/kndchain/pkg/wallet"
 )
 
+const (
+	chainDatadir string = "/tmp/kndchainDatadir"
+	keysDatadir  string = "/tmp/kndchainKeys"
+
+	initialBalance uint64 = 1000
+
+	blockRewardAddress string = "MINER_REWARD"
+	blockRewardAmount  uint64 = 5
+	blockMiningRate    int64  = 10 * 1000 // 10 seconds
+
+	p2pBlockChannel string = "kndchain"
+	p2pTxChannel    string = "kndchaintransactions"
+	p2pURI          string = "redis://@localhost:6379"
+)
+
 func main() {
-	calculator := calculating.NewService(1000)
-	repository := leveldb.NewRepository("/tmp/kndchainDatadir")
+	calculator := calculating.NewService(initialBalance)
+	repository := leveldb.NewRepository(chainDatadir)
 	lister := listing.NewService(repository)
-	validator := validating.NewService(lister, calculator, "MINER_REWARD", 5)
-	miningService := mining.NewService(repository, lister, validator, 10*1000)
+	validator := validating.NewService(lister, calculator, blockRewardAddress, blockRewardAmount)
+	miningService := mining.NewService(repository, lister, validator, blockMiningRate)
 
 	// Load wallet
+	pubKey := os.Args[1]
 	minerWallet := wallet.LoadWallet(
 		crypto.NewSecp256k1Generator(),
 		calculator,
-		1000,
-		"/tmp/kndchainKeys",
-		os.Args[1])
+		initialBalance,
+		keysDatadir,
+		pubKey)
 
 	// Open Redis connection
 	transactionPool := wallet.NewTransactionPool(lister)
@@ -36,9 +52,9 @@ func main() {
 		lister,
 		miningService,
 		transactionPool,
-		"kndchain",
-		"kndchaintransactions",
-		"redis://@localhost:6379")
+		p2pBlockChannel,
+		p2pTxChannel,
+		p2pURI)
 	p2pComm.Connect()
 	defer p2pComm.Disconnect()
 	err := p2pComm.SubscribePeers()
@@ -53,8 +69,8 @@ func main() {
 		transactionPool,
 		minerWallet,
 		p2pComm,
-		"MINER_REWARD",
-		5)
+		blockRewardAddress,
+		blockRewardAmount)
 
 	// Create genesis block
 	if lister.GetBlockCount() == 0 {
