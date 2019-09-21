@@ -36,7 +36,7 @@ func main() {
 	address := flag.String("address", "", "provide pubkeyhex/ address used for transactions or mining reward")
 	chainDatadir := flag.String("chainDatadir", "/tmp/kndchainDatadir", "directory to store blockchain data")
 	keysDatadir := flag.String("keysDatadir", "/tmp/kndchainKeys", "directory to store keys")
-	beaconNodeURL := flag.String("beaconURL", "http://localhost:3000", "beacon node URL to which this node will connect to get latest blockchain data")
+	beaconNodeURL := flag.String("beaconURL", "http://localhost:3001", "beacon node URL to which this node will connect to get latest blockchain data")
 
 	flag.Parse()
 
