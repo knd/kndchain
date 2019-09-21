@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/knd/kndchain/pkg/calculating"
@@ -28,6 +27,8 @@ const (
 	p2pBlockChannel string = "kndchain"
 	p2pTxChannel    string = "kndchaintransactions"
 	p2pURI          string = "redis://@localhost:6379"
+
+	rewardPubKey string = "04749d91026def10f5c55170115b119291c2c9ddc9f8e009808a93fd8c7e4f3753d74ce24e89b7341c634d58e47765c2be8fdf2e9ccaca78f36c1aa7f6ca33b615"
 )
 
 func main() {
@@ -38,13 +39,12 @@ func main() {
 	miningService := mining.NewService(repository, lister, validator, blockMiningRate)
 
 	// Load wallet
-	pubKey := os.Args[1]
 	minerWallet := wallet.LoadWallet(
 		crypto.NewSecp256k1Generator(),
 		calculator,
-		initialBalance,
+		lister,
 		keysDatadir,
-		pubKey)
+		rewardPubKey)
 
 	// Open Redis connection
 	transactionPool := wallet.NewTransactionPool(lister)

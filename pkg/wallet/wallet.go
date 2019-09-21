@@ -65,7 +65,7 @@ func NewWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint6
 }
 
 // LoadWallet loads privKey from local filesystem
-func LoadWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint64, pathToKeysdir string, pubKeyHex string) Wallet {
+func LoadWallet(kpg KeyPairGenerator, c calculating.Service, l listing.Service, pathToKeysdir string, pubKeyHex string) Wallet {
 	file, err := os.Open(path.Join(pathToKeysdir, pubKeyHex))
 	if err != nil {
 		log.Fatalf("Error opening key file %s, %v", path.Join(pathToKeysdir, pubKeyHex), err)
@@ -83,7 +83,7 @@ func LoadWallet(kpg KeyPairGenerator, c calculating.Service, initialBalance uint
 	}
 	return &wallet{
 		gen:           kpg,
-		balance:       initialBalance,
+		balance:       c.Balance(pubKeyHex, toCalculatingBlockchain(l.GetBlockchain())),
 		publicKey:     pubKey,
 		privateKey:    privKey,
 		calculator:    c,
