@@ -2,10 +2,12 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
+	"github.com/knd/kndchain/pkg/http/rest"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
 	"github.com/knd/kndchain/pkg/networking/pubsub"
@@ -80,25 +82,31 @@ func main() {
 	}
 
 	var durations []float64
-	for {
-		lastBlock := lister.GetLastBlock()
+	go func() {
+		for {
+			lastBlock := lister.GetLastBlock()
 
-		minedBlock, _ := miner.Mine()
+			minedBlock, _ := miner.Mine()
 
-		durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
-		durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
+			durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
+			durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
 
-		durations = append(durations, durationDiffInMillis)
-		var sumDuration float64
-		for _, duration := range durations {
-			sumDuration = sumDuration + duration
+			durations = append(durations, durationDiffInMillis)
+			var sumDuration float64
+			for _, duration := range durations {
+				sumDuration = sumDuration + duration
+			}
+			averageDuration := float64(sumDuration) / float64(len(durations))
+
+			log.Printf(
+				"Time to mine block: %.2f ms. Difficulty: %d. Average time: %.2f ms", durationDiffInMillis,
+				minedBlock.Difficulty,
+				averageDuration,
+			)
 		}
-		averageDuration := float64(sumDuration) / float64(len(durations))
+	}()
 
-		log.Printf(
-			"Time to mine block: %.2f ms. Difficulty: %d. Average time: %.2f ms", durationDiffInMillis,
-			minedBlock.Difficulty,
-			averageDuration,
-		)
-	}
+	router := rest.Handler(lister, miningService, p2pComm, transactionPool, nil, calculator)
+	log.Println("Serving now on http://localhost:3001")
+	log.Fatal(http.ListenAndServe(":3001", router))
 }

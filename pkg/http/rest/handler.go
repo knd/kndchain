@@ -6,9 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/knd/kndchain/pkg/calculating"
-
 	"github.com/julienschmidt/httprouter"
+	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/miner"
 	"github.com/knd/kndchain/pkg/mining"
@@ -23,6 +22,8 @@ func Handler(l listing.Service, m mining.Service, c pubsub.Service, p wallet.Tra
 	router.GET("/api/blocks", getBlocks(l))
 	router.POST("/api/blocks", mineBlock(m, l, c))
 	router.GET("/api/transactions", getTxPool(p))
+	router.POST("/api/transactions", addTx(p, wal, c, l))
+	router.GET("/api/address/:address", getAddressInfo(l, cal))
 
 	return router
 }
@@ -150,17 +151,19 @@ func mineTransactions(miner miner.Miner, lister listing.Service) func(w http.Res
 	}
 }
 
-// AddressInfo is return result from getMiningAddressInfo
+// AddressInfo is return result from getAddressInfo
 type AddressInfo struct {
 	Address string `json:"address"`
 	Balance uint64 `json:"balance"`
 }
 
-func getMiningAddressInfo(wal wallet.Wallet, lister listing.Service, cal calculating.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func getAddressInfo(lister listing.Service, cal calculating.Service) func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		pubKeyHex := p.ByName("address")
+
 		addressInfo := AddressInfo{
-			Address: wal.PubKeyHex(),
-			Balance: cal.Balance(wal.PubKeyHex(), toCalculatingBlockchain(lister.GetBlockchain())),
+			Address: pubKeyHex,
+			Balance: cal.Balance(pubKeyHex, toCalculatingBlockchain(lister.GetBlockchain())),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
