@@ -18,9 +18,6 @@ import (
 )
 
 const (
-	chainDatadir string = "/tmp/kndchainDatadir"
-	keysDatadir  string = "/tmp/kndchainKeys"
-
 	initialBalance uint64 = 1000
 
 	blockRewardAddress string = "MINER_REWARD"
@@ -35,31 +32,32 @@ const (
 func main() {
 	enableMining := flag.Bool("mining", false, "enable mining option")
 	address := flag.String("address", "", "provide pubkeyhex/ address used for transactions or mining reward")
+	chainDatadir := flag.String("chainDatadir", "/tmp/kndchainDatadir", "directory to store blockchain data")
+	keysDatadir := flag.String("keysDatadir", "/tmp/kndchainKeys", "directory to store keys")
 	flag.Parse()
 
 	calculator := calculating.NewService(initialBalance)
-	repository := leveldb.NewRepository(chainDatadir)
+	repository := leveldb.NewRepository(*chainDatadir)
 	lister := listing.NewService(repository)
 	validator := validating.NewService(lister, calculator, blockRewardAddress, blockRewardAmount)
 	miningService := mining.NewService(repository, lister, validator, blockMiningRate)
 
 	var wal wallet.Wallet
-	if address != nil {
+	if len(*address) != 0 {
 		// Load wallet
 		wal = wallet.LoadWallet(
 			crypto.NewSecp256k1Generator(),
 			calculator,
 			lister,
-			keysDatadir,
+			*keysDatadir,
 			*address)
 	} else {
-		keysDatadirValue := keysDatadir
 		wal = wallet.NewWallet(
 			crypto.NewSecp256k1Generator(),
 			calculator,
 			initialBalance,
-			&keysDatadirValue)
-		log.Printf("Created new pubkey=%s, in %s", wal.PubKeyHex(), keysDatadirValue)
+			keysDatadir)
+		log.Printf("Created new pubkey=%s, in %s", wal.PubKeyHex(), *keysDatadir)
 	}
 
 	// Open Redis connection
