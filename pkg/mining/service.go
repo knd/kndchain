@@ -129,6 +129,7 @@ func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []Tran
 // ReplaceChain replaces valid incoming chain with existing chain
 func (s *service) ReplaceChain(newChain *Blockchain) error {
 	if newChain == nil {
+		log.Printf("New chain is nil")
 		return ErrInvalidChain
 	}
 	if uint32(len(newChain.Chain)) <= s.listing.GetBlockCount() {

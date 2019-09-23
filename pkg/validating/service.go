@@ -3,6 +3,7 @@ package validating
 import (
 	"encoding/hex"
 	"errors"
+	"log"
 	"math"
 
 	"github.com/knd/kndchain/pkg/calculating"
@@ -32,10 +33,12 @@ func NewService(l listing.Service, c calculating.Service, rewardInputAddress str
 // IsValidChain returns true if list of blocks compose valid blockchain
 func (s *service) IsValidChain(bc *Blockchain) bool {
 	if bc == nil || len(bc.Chain) == 0 {
+		log.Println("Not a valid chain. Chain length is nil or zero length")
 		return false
 	}
 	if len(bc.Chain) == 1 {
 		// the only constrant for valid genesis block is that data is empty
+		log.Println("Not a valid chain. Genesis block should have zero data")
 		return len(bc.Chain[0].Data) == 0
 	}
 
@@ -49,19 +52,23 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 
 		if prevTimestamp.Equal(currBlock.Timestamp) ||
 			prevTimestamp.After(currBlock.Timestamp) {
+			log.Println("Not a valid chain. Block timestamp is not chronological")
 			return false
 		}
 
 		if *prevHash != *currBlock.LastHash {
+			log.Println("Not a valid chain. Last block hash is not inside current block's last hash")
 			return false
 		}
 
 		// Prevent difficulty jump
 		if math.Abs(float64(prevBlockDifficulty-currBlock.Difficulty)) > 1 {
+			log.Println("Not a valid chain. Difficulty jump in blocks.")
 			return false
 		}
 
 		if hashing.SHA256Hash(currBlock.Timestamp.Unix(), *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
+			log.Println("Not a valid chain. Current block hash is not correct SHA256")
 			return false
 		}
 
