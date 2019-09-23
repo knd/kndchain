@@ -78,7 +78,7 @@ func main() {
 
 		miner.AddBlock(newB)
 
-		durationDiff := newB.Timestamp.Sub(lastBlock.Timestamp) // in nano
+		durationDiff := newB.Timestamp - lastBlock.Timestamp // in nano
 		durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
 
 		durations = append(durations, durationDiffInMillis)

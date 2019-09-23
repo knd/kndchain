@@ -95,7 +95,7 @@ func (t *Tx) generateInput(w Wallet, op Output) Input {
 	}
 
 	return Input{
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now().UnixNano(),
 		Amount:    w.Balance(),
 		Address:   w.PubKeyHex(),
 		Signature: hex.EncodeToString(w.Sign(ob)),

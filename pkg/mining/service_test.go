@@ -29,7 +29,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	assert := assert.New(t)
 	lastHash, hash := "0x123", "0x456"
 	lastBlock := &Block{
-		Timestamp:  time.Now(),
+		Timestamp:  time.Now().UnixNano(),
 		LastHash:   &lastHash,
 		Hash:       &hash,
 		Data:       []Transaction{Transaction{ID: "txA"}},
@@ -38,7 +38,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	}
 
 	t.Run("raises block difficulty if mining rate is faster than MINE_RATE milliseconds", func(t *testing.T) {
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 999)
+		blockTimestamp := (*lastBlock).Timestamp + (time.Millisecond * 999).Nanoseconds()
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
@@ -48,7 +48,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	})
 
 	t.Run("lowers block difficulty if mining rate is slower than threshold MINE_RATE milliseconds", func(t *testing.T) {
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 700000)
+		blockTimestamp := (*lastBlock).Timestamp + (time.Millisecond * 700000).Nanoseconds()
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
@@ -58,7 +58,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 	})
 
 	t.Run("lowers block difficulty if mining rate is equal to threshold MINE_RATE milliseconds", func(t *testing.T) {
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 600000)
+		blockTimestamp := (*lastBlock).Timestamp + (time.Millisecond * 600000).Nanoseconds()
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
@@ -69,7 +69,7 @@ func TestAdjustBlockDifficulty(t *testing.T) {
 
 	t.Run("has minimum difficulty of 1 no matter what", func(t *testing.T) {
 		lastBlock.Difficulty = 0
-		blockTimestamp := (*lastBlock).Timestamp.Add(time.Millisecond * 1001)
+		blockTimestamp := (*lastBlock).Timestamp + (time.Millisecond * 1001).Nanoseconds()
 
 		// perform test
 		difficulty := adjustBlockDifficulty(*lastBlock, blockTimestamp, 600000)
@@ -107,7 +107,7 @@ func TestService(t *testing.T) {
 		var nonce uint32 = 1
 		var difficulty uint32 = 1
 		lastBlock := Block{
-			Timestamp:  time.Now(),
+			Timestamp:  time.Now().UnixNano(),
 			LastHash:   &lastHash,
 			Hash:       &hash,
 			Data:       []Transaction{Transaction{ID: "tx1"}},
@@ -124,7 +124,7 @@ func TestService(t *testing.T) {
 		assert.NotEmpty(newBlock.Timestamp)
 		assert.Equal("0x456", *newBlock.LastHash)
 		assert.Equal("00", hexStringToBinary(*newBlock.Hash)[:newBlock.Difficulty])
-		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp.Unix(), *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
+		assert.Equal(hashing.SHA256Hash(data, newBlock.Timestamp, *lastBlock.Hash, newBlock.Nonce, newBlock.Difficulty), *newBlock.Hash)
 		assert.Equal(data, newBlock.Data)
 	})
 
@@ -134,7 +134,7 @@ func TestService(t *testing.T) {
 		LastHash := "0x123"
 		Hash := "0x456"
 		minedBlock := &Block{
-			Timestamp: time.Now(),
+			Timestamp: time.Now().UnixNano(),
 			LastHash:  &LastHash,
 			Hash:      &Hash,
 			Data:      []Transaction{Transaction{ID: "tx1"}},
@@ -165,9 +165,9 @@ func TestService(t *testing.T) {
 
 		genesisLastHash := "0x123"
 		genesisHash := "0x456"
-		genesisTimestamp := time.Now()
-		timestamp1 := time.Now().Add(time.Duration(100))
-		timestamp2 := time.Now().Add(time.Duration(200))
+		genesisTimestamp := time.Now().UnixNano()
+		timestamp1 := time.Now().Add(time.Duration(100)).UnixNano()
+		timestamp2 := time.Now().Add(time.Duration(200)).UnixNano()
 
 		genesisBlock := Block{
 			Timestamp: genesisTimestamp,
@@ -209,9 +209,9 @@ func TestService(t *testing.T) {
 
 		genesisLastHash := "0x123"
 		genesisHash := "0x456"
-		genesisTimestamp := time.Now()
-		timestamp1 := time.Now().Add(time.Duration(100))
-		timestamp2 := time.Now().Add(time.Duration(200))
+		genesisTimestamp := time.Now().UnixNano()
+		timestamp1 := time.Now().Add(time.Duration(100)).UnixNano()
+		timestamp2 := time.Now().Add(time.Duration(200)).UnixNano()
 
 		genesisBlock := Block{
 			Timestamp: genesisTimestamp,
@@ -254,9 +254,9 @@ func TestService(t *testing.T) {
 
 		genesisLastHash := "0x123"
 		genesisHash := "0x456"
-		genesisTimestamp := time.Now()
-		timestamp1 := time.Now().Add(time.Duration(100))
-		timestamp2 := time.Now().Add(time.Duration(200))
+		genesisTimestamp := time.Now().UnixNano()
+		timestamp1 := time.Now().Add(time.Duration(100)).UnixNano()
+		timestamp2 := time.Now().Add(time.Duration(200)).UnixNano()
 
 		genesisBlock := Block{
 			Timestamp: genesisTimestamp,

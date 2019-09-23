@@ -7,12 +7,11 @@ import (
 	"log"
 	"os"
 	"path"
-	"time"
-
-	"github.com/syndtr/goleveldb/leveldb"
+	"sync"
 
 	"github.com/knd/kndchain/pkg/listing"
 	"github.com/knd/kndchain/pkg/mining"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // LevelDB keeps blockchain in local key-value db
@@ -25,6 +24,7 @@ type LevelDB struct {
 	chainDB               *leveldb.DB
 	currentBlockHash      string
 	blockCount            uint32
+	mutex                 *sync.Mutex
 }
 
 // NewRepository creates a repository to interact with LevelDB
@@ -33,6 +33,7 @@ func NewRepository(pathToDataDir string) *LevelDB {
 		PathToTransactionData: path.Join(pathToDataDir, "transactionDatadir"),
 		PathToBlockData:       path.Join(pathToDataDir, "blockDatadir"),
 		PathToChainData:       path.Join(pathToDataDir, "chainDatadir"),
+		mutex:                 &sync.Mutex{},
 	}
 
 	if dirExisted, _ := exists(r.PathToTransactionData); !dirExisted {
@@ -97,6 +98,7 @@ func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
 
 	rBlock := toRepoBlock(minedBlock)
 
+	db.mutex.Lock()
 	// add to transaction db
 	for _, tx := range rBlock.Data {
 		txBytes, err := json.Marshal(tx)
@@ -133,6 +135,9 @@ func (db *LevelDB) AddBlock(minedBlock *mining.Block) error {
 
 	db.currentBlockHash = rBlock.Hash
 	db.blockCount++
+	db.mutex.Unlock()
+
+	log.Printf("Added block. Timestamp: %d, BlockHash=%s, Count=%d", rBlock.Timestamp, db.currentBlockHash, db.blockCount)
 
 	return nil
 }
@@ -152,7 +157,7 @@ func toRepoBlock(miningBlock *mining.Block) *Block {
 		})
 	}
 	return &Block{
-		Timestamp:  miningBlock.Timestamp.Unix(),
+		Timestamp:  miningBlock.Timestamp,
 		LastHash:   *miningBlock.LastHash,
 		Hash:       *miningBlock.Hash,
 		Nonce:      miningBlock.Nonce,
@@ -183,13 +188,16 @@ func (db *LevelDB) GetBlockCount() uint32 {
 // GetLastBlock returns the last block in blockchain
 func (db *LevelDB) GetLastBlock() listing.Block {
 	if db.currentBlockHash != "" {
+		db.mutex.Lock()
 		lBlock := db.GetBlockByHash(db.currentBlockHash)
 		if lBlock == nil {
 			panic("No last block found by currentBlockHash")
 		}
+		db.mutex.Unlock()
 		return *lBlock
 	}
 
+	db.mutex.Lock()
 	iter := db.chainDB.NewIterator(nil, nil)
 	var currentBlockHash string
 	var lastBlockHashBytes []byte
@@ -207,6 +215,7 @@ func (db *LevelDB) GetLastBlock() listing.Block {
 	if lBlock == nil {
 		panic(err)
 	}
+	db.mutex.Lock()
 
 	return *lBlock
 }
@@ -249,7 +258,7 @@ func toListingBlock(b Block) listing.Block {
 	}
 
 	return listing.Block{
-		Timestamp:  time.Unix(b.Timestamp, 0),
+		Timestamp:  b.Timestamp,
 		LastHash:   &b.LastHash,
 		Hash:       &b.Hash,
 		Nonce:      b.Nonce,
@@ -261,7 +270,7 @@ func toListingBlock(b Block) listing.Block {
 // GetBlockchain returns a list of blocks from genesis block
 func (db *LevelDB) GetBlockchain() *listing.Blockchain {
 	lBlockchain := &listing.Blockchain{}
-	// TODO: Implement this
+
 	iter := db.chainDB.NewIterator(nil, nil)
 	for iter.Next() {
 		blockBytes, err := db.blockDB.Get(iter.Value(), nil)
@@ -273,6 +282,9 @@ func (db *LevelDB) GetBlockchain() *listing.Blockchain {
 		if err != nil {
 			panic(err)
 		}
+		log.Printf("GetBlockchain(): LastHash=%s", rBlock.LastHash)
+		log.Printf("GetBlockchain(): Hash=%s", rBlock.Hash)
+		log.Println("---")
 		lBlockchain.Chain = append(lBlockchain.Chain, toListingBlock(rBlock))
 	}
 	iter.Release()
@@ -286,6 +298,7 @@ func (db *LevelDB) GetBlockchain() *listing.Blockchain {
 
 // ReplaceChain replace the current blockchain with the newchain
 func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
+	db.mutex.Lock()
 	err := db.DeleteAllData()
 	if err != nil {
 		return err
@@ -302,6 +315,7 @@ func (db *LevelDB) ReplaceChain(newChain *mining.Blockchain) error {
 
 	db.currentBlockHash = *lastMinedBlock.Hash
 	db.blockCount = uint32(len(newChain.Chain))
+	db.mutex.Unlock()
 
 	return nil
 }
@@ -313,6 +327,7 @@ func (db *LevelDB) DeleteAllData() error {
 	deleteDB(db.chainDB)
 	db.currentBlockHash = ""
 	db.blockCount = 0
+	log.Printf("Blockcount after delete=%d", db.GetBlockCount())
 	return nil
 }
 

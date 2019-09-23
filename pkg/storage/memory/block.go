@@ -1,9 +1,5 @@
 package memory
 
-import (
-	"time"
-)
-
 // Input of transaction
 type Input struct {
 	Timestamp int64
@@ -21,7 +17,7 @@ type Transaction struct {
 
 // Block represents a block in blockchain
 type Block struct {
-	Timestamp  time.Time
+	Timestamp  int64
 	LastHash   *string
 	Hash       *string
 	Data       []Transaction

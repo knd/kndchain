@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
-	"math"
 
 	"github.com/knd/kndchain/pkg/calculating"
 	"github.com/knd/kndchain/pkg/crypto"
@@ -49,25 +48,25 @@ func (s *service) IsValidChain(bc *Blockchain) bool {
 
 	for i := 1; i < len(bc.Chain); i++ {
 		currBlock := bc.Chain[i]
+		log.Printf("PrevBlockHash=%s, CurrBlockHash=%s", *prevHash, *currBlock.Hash)
 
-		if prevTimestamp.Equal(currBlock.Timestamp) ||
-			prevTimestamp.After(currBlock.Timestamp) {
+		if prevTimestamp >= currBlock.Timestamp {
 			log.Println("Not a valid chain. Block timestamp is not chronological")
 			return false
 		}
 
 		if *prevHash != *currBlock.LastHash {
-			log.Println("Not a valid chain. Last block hash is not inside current block's last hash")
+			log.Printf("Not a valid chain. Last block hash is not inside current block's last hash. *prevHash=%s, *currBlock.LastHash=%s", *prevHash, *currBlock.LastHash)
 			return false
 		}
 
 		// Prevent difficulty jump
-		if math.Abs(float64(prevBlockDifficulty-currBlock.Difficulty)) > 1 {
-			log.Println("Not a valid chain. Difficulty jump in blocks.")
+		if (prevBlockDifficulty > currBlock.Difficulty && prevBlockDifficulty-currBlock.Difficulty > 1) || (currBlock.Difficulty > prevBlockDifficulty && currBlock.Difficulty-prevBlockDifficulty > 1) {
+			log.Printf("Not a valid chain. Difficulty jump in blocks. prevBlockDifficulty=%d, currBlock.Difficulty=%d", prevBlockDifficulty, currBlock.Difficulty)
 			return false
 		}
 
-		if hashing.SHA256Hash(currBlock.Timestamp.Unix(), *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
+		if hashing.SHA256Hash(currBlock.Timestamp, *currBlock.LastHash, currBlock.Data, currBlock.Nonce, currBlock.Difficulty) != *currBlock.Hash {
 			log.Println("Not a valid chain. Current block hash is not correct SHA256")
 			return false
 		}

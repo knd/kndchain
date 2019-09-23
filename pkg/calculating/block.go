@@ -1,7 +1,5 @@
 package calculating
 
-import "time"
-
 // Input of transaction
 type Input struct {
 	Timestamp int64  `json:"timestamp"`
@@ -19,7 +17,7 @@ type Transaction struct {
 
 // Block represents a block in blockchain
 type Block struct {
-	Timestamp  time.Time     `json:"timestamp"`
+	Timestamp  int64         `json:"timestamp"`
 	LastHash   *string       `json:"lastHash"`
 	Hash       *string       `json:"hash"`
 	Data       []Transaction `json:"data"`

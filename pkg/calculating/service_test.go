@@ -45,7 +45,7 @@ func TestService_Balance(t *testing.T) {
 		beforeEach()
 		blockchain := &Blockchain{Chain: []Block{
 			Block{
-				Timestamp:  time.Now(),
+				Timestamp:  time.Now().UnixNano(),
 				LastHash:   nil,
 				Hash:       nil,
 				Nonce:      1,
@@ -66,7 +66,7 @@ func TestService_Balance(t *testing.T) {
 		beforeEach()
 		blockchain := &Blockchain{Chain: []Block{
 			Block{
-				Timestamp:  time.Now(),
+				Timestamp:  time.Now().UnixNano(),
 				LastHash:   nil,
 				Hash:       nil,
 				Nonce:      1,

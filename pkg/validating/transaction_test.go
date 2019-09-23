@@ -35,7 +35,7 @@ func TestIsValidTransaction(t *testing.T) {
 	})
 
 	t.Run("returns false if tx ouptut is invalid", func(t *testing.T) {
-		iT := time.Now().Unix()
+		iT := time.Now().UnixNano()
 		senderPubKeyHex := "0x123"
 		receiverPubKeyHex := "0x456"
 		tx := Transaction{}

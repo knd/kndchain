@@ -122,7 +122,7 @@ func main() {
 
 				minedBlock, _ := miner.Mine()
 
-				durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
+				durationDiff := minedBlock.Timestamp - lastBlock.Timestamp
 				durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
 
 				durations = append(durations, durationDiffInMillis)

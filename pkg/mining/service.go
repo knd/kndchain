@@ -56,13 +56,13 @@ func NewService(r Repository, l listing.Service, v validating.Service, mineRate 
 func CreateGenesisBlock(genesisLastHash string, genesisHash string, genesisDifficulty uint32, genesisNonce uint32) (*Block, error) {
 	data := []Transaction{}
 
-	return yieldBlock(time.Now(), &genesisLastHash, &genesisHash, data, genesisNonce, genesisDifficulty), nil
+	return yieldBlock(time.Now().UnixNano(), &genesisLastHash, &genesisHash, data, genesisNonce, genesisDifficulty), nil
 }
 
-func adjustBlockDifficulty(lastBlock Block, blockTimestamp time.Time, mineRate int64) uint32 {
-	if blockTimestamp.Sub(lastBlock.Timestamp) < (time.Duration(mineRate) * time.Millisecond) {
+func adjustBlockDifficulty(lastBlock Block, blockTimestamp int64, mineRate int64) uint32 {
+	if (blockTimestamp - lastBlock.Timestamp) < (time.Duration(mineRate) * time.Millisecond).Nanoseconds() {
 		return lastBlock.Difficulty + 1
-	} else if blockTimestamp.Sub(lastBlock.Timestamp) > (time.Duration(mineRate) * time.Millisecond) {
+	} else if (blockTimestamp - lastBlock.Timestamp) > (time.Duration(mineRate) * time.Millisecond).Nanoseconds() {
 		if lastBlock.Difficulty <= 1 {
 			return 1
 		}
@@ -81,13 +81,13 @@ func (s *service) MineNewBlock(lastBlock *Block, data []Transaction) (*Block, er
 
 	difficulty := lastBlock.Difficulty
 	var nonce uint32
-	var timestamp time.Time
+	var timestamp int64
 	var hash string
 	for {
 		nonce++
-		timestamp = time.Now()
+		timestamp = time.Now().UnixNano()
 		difficulty = adjustBlockDifficulty(*lastBlock, timestamp, s.MineRate)
-		hash = hashing.SHA256Hash(timestamp.Unix(), *lastBlock.Hash, data, nonce, difficulty)
+		hash = hashing.SHA256Hash(timestamp, *lastBlock.Hash, data, nonce, difficulty)
 		if hexStringToBinary(hash)[:difficulty] == strings.Repeat("0", int(difficulty)) {
 			break
 		}
@@ -115,7 +115,7 @@ func (s *service) AddBlock(minedBlock *Block) error {
 	return s.blockchain.AddBlock(minedBlock)
 }
 
-func yieldBlock(timestamp time.Time, lastHash *string, hash *string, data []Transaction, nonce uint32, difficulty uint32) *Block {
+func yieldBlock(timestamp int64, lastHash *string, hash *string, data []Transaction, nonce uint32, difficulty uint32) *Block {
 	return &Block{
 		Timestamp:  timestamp,
 		LastHash:   lastHash,

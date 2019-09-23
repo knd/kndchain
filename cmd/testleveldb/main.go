@@ -12,7 +12,7 @@ func scenarioA(repository *leveldb.LevelDB) {
 	lastHashA := "0x000"
 	hashA := "0x000"
 	blockA := mining.Block{
-		Timestamp:  time.Now(),
+		Timestamp:  time.Now().UnixNano(),
 		LastHash:   &lastHashA,
 		Hash:       &hashA,
 		Data:       []mining.Transaction{},
@@ -22,7 +22,7 @@ func scenarioA(repository *leveldb.LevelDB) {
 	lastHashB := "blockAHash"
 	hashB := "hashB"
 	blockB := mining.Block{
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UnixNano(),
 		LastHash:  &lastHashB,
 		Hash:      &hashB,
 		Data: []mining.Transaction{
@@ -30,7 +30,7 @@ func scenarioA(repository *leveldb.LevelDB) {
 				ID:     "111",
 				Output: map[string]uint64{"0x123": 10},
 				Input: mining.Input{
-					Timestamp: time.Now().Unix(),
+					Timestamp: time.Now().UnixNano(),
 					Amount:    100,
 					Address:   "0x111",
 					Signature: "abc",
@@ -45,7 +45,7 @@ func scenarioA(repository *leveldb.LevelDB) {
 	repository.AddBlock(&blockB)
 
 	lBlock := repository.GetLastBlock()
-	log.Printf("Timestamp=%d", lBlock.Timestamp.Unix())
+	log.Printf("Timestamp=%d", lBlock.Timestamp)
 	log.Printf("LastHash=%s", *lBlock.LastHash)
 	log.Printf("Hash=%s", *lBlock.Hash)
 	log.Printf("Nonce=%d", lBlock.Nonce)
@@ -68,7 +68,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 	lastHashA := "0x000"
 	hashA := "0x000"
 	blockA := mining.Block{
-		Timestamp:  time.Now(),
+		Timestamp:  time.Now().UnixNano(),
 		LastHash:   &lastHashA,
 		Hash:       &hashA,
 		Data:       []mining.Transaction{},
@@ -78,7 +78,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 	lastHashB := "blockAHash"
 	hashB := "hashB"
 	blockB := mining.Block{
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UnixNano(),
 		LastHash:  &lastHashB,
 		Hash:      &hashB,
 		Data: []mining.Transaction{
@@ -86,7 +86,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 				ID:     "111",
 				Output: map[string]uint64{"0x123": 10},
 				Input: mining.Input{
-					Timestamp: time.Now().Unix(),
+					Timestamp: time.Now().UnixNano(),
 					Amount:    100,
 					Address:   "0x111",
 					Signature: "abc",
@@ -102,7 +102,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 	lastHashC := "0x000C"
 	hashC := "0x000C"
 	blockC := mining.Block{
-		Timestamp:  time.Now(),
+		Timestamp:  time.Now().UnixNano(),
 		LastHash:   &lastHashC,
 		Hash:       &hashC,
 		Data:       []mining.Transaction{},
@@ -112,7 +112,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 	lastHashD := "blockDHash"
 	hashD := "hashD"
 	blockD := mining.Block{
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UnixNano(),
 		LastHash:  &lastHashD,
 		Hash:      &hashD,
 		Data: []mining.Transaction{
@@ -120,7 +120,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 				ID:     "DDD",
 				Output: map[string]uint64{"0xDDD": 100},
 				Input: mining.Input{
-					Timestamp: time.Now().Unix(),
+					Timestamp: time.Now().UnixNano(),
 					Amount:    999,
 					Address:   "DDD0x",
 					Signature: "dddddd",
@@ -137,7 +137,7 @@ func scenarioB(repository *leveldb.LevelDB) {
 	repository.ReplaceChain(mBlockchain)
 
 	lBlock := repository.GetLastBlock()
-	log.Printf("Timestamp=%d", lBlock.Timestamp.Unix())
+	log.Printf("Timestamp=%d", lBlock.Timestamp)
 	log.Printf("LastHash=%s", *lBlock.LastHash)
 	log.Printf("Hash=%s", *lBlock.Hash)
 	log.Printf("Nonce=%d", lBlock.Nonce)

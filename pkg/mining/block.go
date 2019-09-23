@@ -1,12 +1,8 @@
 package mining
 
-import (
-	"time"
-)
-
 // Block represents a block in blockchain
 type Block struct {
-	Timestamp  time.Time     `json:"timestamp"`
+	Timestamp  int64         `json:"timestamp"`
 	LastHash   *string       `json:"lastHash"`
 	Hash       *string       `json:"hash"`
 	Data       []Transaction `json:"data"`

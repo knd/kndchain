@@ -44,6 +44,7 @@ func (m *miner) Mine() (*mining.Block, error) {
 		Nonce:      lastBlock.Nonce,
 		Difficulty: lastBlock.Difficulty,
 	}
+	log.Printf("LastBlockHash=%s", *mb.Hash)
 	minedBlock, err := m.service.MineNewBlock(mb, fromPooltoMiningTransactions(validTransactions))
 	if err != nil {
 		log.Printf("Failed to create mined block: %s", err.Error())

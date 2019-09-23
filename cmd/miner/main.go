@@ -89,7 +89,8 @@ func main() {
 
 		// Create genesis block
 		if lister.GetBlockCount() == 0 {
-			genesisBlock, _ := mining.CreateGenesisBlock("0x000", "0x000", 10, 0)
+			log.Println("Creating genesis block")
+			genesisBlock, _ := mining.CreateGenesisBlock("0x000", "0x000", 20, 0)
 			miningService.AddBlock(genesisBlock)
 			p2pComm.BroadcastBlockchain(lister.GetBlockchain())
 		}
@@ -102,7 +103,7 @@ func main() {
 
 				minedBlock, _ := miner.Mine()
 
-				durationDiff := minedBlock.Timestamp.Sub(lastBlock.Timestamp)
+				durationDiff := minedBlock.Timestamp - lastBlock.Timestamp
 				durationDiffInMillis := float64(durationDiff) / float64(time.Millisecond)
 
 				durations = append(durations, durationDiffInMillis)
